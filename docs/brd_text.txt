@@ -1,0 +1,2525 @@
+ 
+VyceScore 
+Business Requirements Document 
+Credit Scoring Engine for Financial Institutions 
+ 
+Version: 1.0 
+Date: March 2026 
+Classification: CONFIDENTIAL 
+
+---PAGE BREAK---
+Table of Contents 
+(Right-click and select "Update Field" to refresh page numbers) 
+1. Document Control ..........................................................................................................................7 
+1.1 Document Information ..................................................................................................................... 7 
+1.2 Revision History ................................................................................................................................ 7 
+1.3 Document Purpose ........................................................................................................................... 7 
+1.4 Intended Audience ........................................................................................................................... 7 
+1.5 Related Documents .......................................................................................................................... 7 
+2. Executive Summary ........................................................................................................................9 
+2.1 Key Value Propositions ..................................................................................................................... 9 
+2.2 Target Market ................................................................................................................................... 9 
+2.3 Business Model ................................................................................................................................. 9 
+2.4 Success Metrics ................................................................................................................................ 9 
+3. Problem Statement ...................................................................................................................... 11 
+3.1 Market Context............................................................................................................................... 11 
+3.2 Pain Points ...................................................................................................................................... 11 
+3.2.1 For Financial Institutions ...................................................................................................................... 11 
+3.2.2 For Borrowers ....................................................................................................................................... 11 
+3.3 Current State Analysis .................................................................................................................... 11 
+3.4 Opportunity .................................................................................................................................... 12 
+4. Solution Overview ........................................................................................................................ 13 
+4.1 Product Tiers................................................................................................................................... 13 
+4.1.1 VyceScore Lite API ................................................................................................................................ 13 
+4.1.2 VyceScore Pro API ................................................................................................................................ 13 
+4.1.3 Deep Dive API ....................................................................................................................................... 13 
+4.2 Core Features ................................................................................................................................. 14 
+4.2.1 Scoring Engine ...................................................................................................................................... 14 
+4.2.2 Explainability Framework ..................................................................................................................... 14 
+4.2.3 Data Integration ................................................................................................................................... 14 
+4.2.4 Active Learning Pipeline ....................................................................................................................... 14 
+4.3 Key Metrics and Score Interpretation ............................................................................................ 14 
+5. Data Sources ................................................................................................................................ 16 
+5.1 VycePay Wallet Data ...................................................................................................................... 16 
+5.1.1 Fund Transfer (FT) and Inter-Bank Fund Transfer (IBFT) Transactions ................................................. 16 
+5.1.2 Remittance Transactions ...................................................................................................................... 16 
+5.1.3 Merchant Activity Data ........................................................................................................................ 16 
+5.2 VyceTrade SME Platform Data ....................................................................................................... 17 
+5.2.1 Supplier Payments ................................................................................................................................ 17 
+
+---PAGE BREAK---
+5.2.2 Invoices ................................................................................................................................................. 17 
+5.2.3 Supply Chain Links ................................................................................................................................ 17 
+5.3 Compliance and Identity Partners .................................................................................................. 17 
+5.3.1 KYC Verification Data ............................................................................................................................ 18 
+5.3.2 AML Screening Data ............................................................................................................................. 18 
+5.4 Data Refresh Frequency ................................................................................................................. 18 
+5.5 Data Retention Policy ..................................................................................................................... 18 
+6. Data Flow Architecture ................................................................................................................. 19 
+6.1 High-Level Data Flow ...................................................................................................................... 19 
+6.2 Data Flow Diagrams ........................................................................................................................ 19 
+6.2.1 Batch Data Ingestion Flow .................................................................................................................... 19 
+6.2.2 Real-Time Score Request Flow ............................................................................................................. 20 
+6.2.3 Batch Upload Processing Flow ............................................................................................................. 20 
+6.2.4 Active Learning Feedback Flow ............................................................................................................ 20 
+6.3 Data Storage Architecture .............................................................................................................. 21 
+7. High-Level Architecture ................................................................................................................ 22 
+7.1 Architectural Principles .................................................................................................................. 22 
+7.2 System Components ....................................................................................................................... 22 
+7.2.1 API Gateway ......................................................................................................................................... 22 
+7.2.2 Authentication Service ......................................................................................................................... 22 
+7.2.3 Scoring Service ..................................................................................................................................... 22 
+7.2.4 Feature Engineering Service ................................................................................................................. 23 
+7.2.5 Model Management Service ................................................................................................................ 23 
+7.2.6 Feedback Service .................................................................................................................................. 23 
+7.2.7 Licensing and Billing Service ................................................................................................................. 23 
+7.2.8 Admin UI ............................................................................................................................................... 24 
+7.3 Frontend Architecture .................................................................................................................... 24 
+7.3.1 Admin Portal ......................................................................................................................................... 24 
+7.3.2 Partner Dashboard (White-Label) ........................................................................................................ 24 
+7.4 API Architecture ............................................................................................................................. 24 
+7.5 Infrastructure Requirements .......................................................................................................... 25 
+8. Use Cases ..................................................................................................................................... 26 
+8.1 Authentication and Access Control ................................................................................................ 26 
+UC-AUTH-001: API Key Authentication ......................................................................................................... 26 
+UC-AUTH-002: Admin User Login .................................................................................................................. 26 
+UC-AUTH-003: Password Reset ..................................................................................................................... 26 
+UC-AUTH-004: Session Refresh ..................................................................................................................... 27 
+8.2 User Management .......................................................................................................................... 27 
+UC-USER-001: Create Admin User ................................................................................................................. 27 
+UC-USER-002: Deactivate User...................................................................................................................... 28 
+UC-USER-003: Update User Role ................................................................................................................... 28 
+8.3 Customer Management.................................................................................................................. 28 
+
+---PAGE BREAK---
+UC-CUST-001: Onboard New Customer ........................................................................................................ 28 
+UC-CUST-002: Configure License Tier ............................................................................................................ 29 
+UC-CUST-003: Activate Production Access .................................................................................................... 29 
+8.4 Score Retrieval ................................................................................................................................ 29 
+UC-SCORE-001: Retrieve Lite Score ............................................................................................................... 29 
+UC-SCORE-002: Retrieve Pro Score ............................................................................................................... 30 
+UC-SCORE-003: Batch Score Upload ............................................................................................................. 30 
+8.5 Feedback and Model Improvement ............................................................................................... 31 
+UC-FDBK-001: Submit Loan Outcome ........................................................................................................... 31 
+UC-FDBK-002: Trigger Model Retraining ....................................................................................................... 31 
+8.6 Monitoring and Reporting .............................................................................................................. 32 
+UC-MON-001: View KPI Dashboard ............................................................................................................... 32 
+UC-MON-002: Query Audit Logs ................................................................................................................... 32 
+9. API Specifications ......................................................................................................................... 33 
+9.1 Authentication ................................................................................................................................ 33 
+9.2 VyceScore Lite API .......................................................................................................................... 33 
+9.2.1 Get Lite Score ....................................................................................................................................... 33 
+9.3 VyceScore Pro API........................................................................................................................... 33 
+9.3.1 Get Pro Score ........................................................................................................................................ 33 
+9.4 Deep Dive API ................................................................................................................................. 34 
+9.4.1 Get Custom Score ................................................................................................................................. 34 
+9.5 Batch Processing API ...................................................................................................................... 35 
+9.5.1 Submit Batch Job .................................................................................................................................. 35 
+9.5.2 Get Batch Status ................................................................................................................................... 35 
+9.6 Feedback API .................................................................................................................................. 35 
+9.6.1 Submit Loan Outcome .......................................................................................................................... 35 
+9.7 Admin API ....................................................................................................................................... 36 
+9.7.1 List Customers ...................................................................................................................................... 36 
+9.7.2 Update Customer License .................................................................................................................... 36 
+9.8 Error Handling ................................................................................................................................ 37 
+9.9 Rate Limit Headers ......................................................................................................................... 37 
+10. KPIs and Metrics ......................................................................................................................... 38 
+10.1 Model Performance KPIs .............................................................................................................. 38 
+10.1.1 AUC-ROC Score ................................................................................................................................... 38 
+10.1.2 Precision at K ...................................................................................................................................... 38 
+10.1.3 Calibration Error ................................................................................................................................. 38 
+10.2 Business KPIs ................................................................................................................................ 39 
+10.2.1 Daily Query Volume ............................................................................................................................ 39 
+10.2.2 Customer Adoption Rate .................................................................................................................... 39 
+10.2.3 Revenue Per Customer ....................................................................................................................... 39 
+10.3 Data Quality KPIs .......................................................................................................................... 40 
+10.3.1 Data Completeness ............................................................................................................................ 40 
+
+---PAGE BREAK---
+10.3.2 Feature Freshness .............................................................................................................................. 40 
+10.4 System Performance KPIs ............................................................................................................. 40 
+10.4.1 API Response Time ............................................................................................................................. 40 
+10.4.2 System Availability.............................................................................................................................. 41 
+10.4.3 Error Rate ........................................................................................................................................... 41 
+10.5 KPI Snapshot Schema ................................................................................................................... 41 
+10.6 KPI Calculation Schedule .............................................................................................................. 42 
+11. Data and Domain Model ............................................................................................................. 43 
+11.1 Core Domain Entities .................................................................................................................... 43 
+11.1.1 Subject Entity...................................................................................................................................... 43 
+11.1.2 Score Entity ........................................................................................................................................ 43 
+11.1.3 Risk Driver Entity ................................................................................................................................ 43 
+11.1.4 Feature Entity ..................................................................................................................................... 44 
+11.1.5 Customer Entity .................................................................................................................................. 44 
+11.1.6 API Request Log Entity........................................................................................................................ 45 
+11.2 Entity Relationship Diagram ......................................................................................................... 45 
+11.3 Feature Categories ....................................................................................................................... 45 
+11.3.1 Transaction Features .......................................................................................................................... 45 
+11.3.2 Network Features ............................................................................................................................... 46 
+11.3.3 Supply Chain Features ........................................................................................................................ 46 
+11.3.4 Compliance Features .......................................................................................................................... 46 
+11.4 Data Partitioning Strategy ............................................................................................................ 46 
+12. AI/ML Models and Pipeline ......................................................................................................... 48 
+12.1 Model Architecture ...................................................................................................................... 48 
+12.1.1 Primary Model: XGBoost Classifier ..................................................................................................... 48 
+12.1.2 Model Hyperparameters .................................................................................................................... 48 
+12.2 Training Data Generation ............................................................................................................. 48 
+12.2.1 Phase 1: Vyce-Observed Distress (VOD) ............................................................................................. 48 
+12.2.2 VOD Signal Calculation ....................................................................................................................... 49 
+12.2.3 Phase 2: Production Ground Truth ..................................................................................................... 49 
+12.3 Active Learning Pipeline ............................................................................................................... 49 
+12.3.1 Pipeline Overview ............................................................................................................................... 49 
+12.3.2 Retraining Triggers ............................................................................................................................. 50 
+12.3.3 Model Evaluation ............................................................................................................................... 50 
+12.4 Explainability Framework ............................................................................................................. 50 
+12.4.1 SHAP Values........................................................................................................................................ 50 
+12.4.2 Top Risk Drivers Selection .................................................................................................................. 50 
+12.5 Model Versioning and Deployment ............................................................................................. 51 
+12.5.1 Model Registry ................................................................................................................................... 51 
+12.5.2 Deployment Strategy .......................................................................................................................... 51 
+12.6 Feature Store ................................................................................................................................ 51 
+13. Security and Compliance ............................................................................................................ 52 
+
+---PAGE BREAK---
+13.1 Data Privacy .................................................................................................................................. 52 
+13.1.1 PII Handling ........................................................................................................................................ 52 
+13.1.2 Data Anonymization ........................................................................................................................... 52 
+13.2 Regulatory Compliance ................................................................................................................ 52 
+13.2.1 Kenya Data Protection Act ................................................................................................................. 52 
+13.2.2 Central Bank of Kenya Requirements ................................................................................................. 52 
+13.2.3 International Standards ...................................................................................................................... 53 
+13.3 Audit Trail ..................................................................................................................................... 53 
+13.3.1 Audit Logging Requirements .............................................................................................................. 53 
+13.3.2 Audit Log Retention ............................................................................................................................ 53 
+13.4 Security Controls .......................................................................................................................... 53 
+13.4.1 Authentication and Authorization ...................................................................................................... 53 
+13.4.2 Network Security ................................................................................................................................ 54 
+13.4.3 Vulnerability Management ................................................................................................................. 54 
+13.5 Incident Response ........................................................................................................................ 54 
+14. Deployment and Operations ....................................................................................................... 55 
+14.1 Deployment Architecture ............................................................................................................. 55 
+14.1.1 Environment Strategy ......................................................................................................................... 55 
+14.1.2 Infrastructure as Code ........................................................................................................................ 55 
+14.2 CI/CD Pipeline ............................................................................................................................... 55 
+14.2.1 Build Pipeline ...................................................................................................................................... 55 
+14.2.2 Deployment Pipeline .......................................................................................................................... 55 
+14.3 Monitoring and Alerting ............................................................................................................... 56 
+14.3.1 Metrics Collection............................................................................................................................... 56 
+14.3.2 Alerting Rules ..................................................................................................................................... 56 
+14.4 Backup and Recovery ................................................................................................................... 56 
+14.4.1 Backup Strategy .................................................................................................................................. 56 
+14.4.2 Recovery Objectives ........................................................................................................................... 56 
+14.5 Operational Runbooks .................................................................................................................. 57 
+14.6 Capacity Planning ......................................................................................................................... 57 
+ 
+
+---PAGE BREAK---
+1. Document Control 
+1.1 Document Information 
+Document Title 
+VyceScore Business Requirements Document 
+Version 
+1.0 
+Date 
+March 8, 2026 
+Author 
+Product and Engineering Team 
+Status 
+Draft for Review 
+Classification 
+CONFIDENTIAL 
+1.2 Revision History 
+Version 
+Date 
+Author 
+Changes 
+1.0 
+2026-03-08 
+Product Team 
+Initial version 
+1.3 Document Purpose 
+This Business Requirements Document (BRD) serves as the comprehensive technical specification for 
+VyceScore, a credit scoring engine designed for banks and financial institutions. This document 
+provides detailed requirements for architects, developers, data scientists, and DevOps engineers to 
+design, build, and deploy the complete VyceScore platform. 
+1.4 Intended Audience 
+• 
+Solution Architects - for system design and component architecture 
+• 
+Software Engineers - for API development and frontend implementation 
+• 
+Data Engineers - for data pipelines and ETL processes 
+• 
+Data Scientists - for model development and MLOps pipeline 
+• 
+DevOps Engineers - for deployment and infrastructure 
+• 
+Security Engineers - for compliance and security implementation 
+• 
+QA Engineers - for test planning and validation 
+1.5 Related Documents 
+• 
+VyceScore Technical Architecture Document (TAD) 
+• 
+VyceScore Data Dictionary 
+• 
+VyceScore API Reference Guide 
+
+---PAGE BREAK---
+• 
+VyceScore Security and Compliance Guide 
+• 
+VyceScore Operations Runbook 
+
+---PAGE BREAK---
+2. Executive Summary 
+VyceScore is an advanced credit scoring engine that leverages alternative data sources to provide 
+comprehensive credit risk assessments for Micro, Small, and Medium Enterprises (MSMEs) and 
+individual borrowers in Kenya and emerging markets. The platform addresses the critical challenge 
+of credit inaccessibility for the unbanked and underbanked population by utilizing non-traditional 
+data points from digital financial transactions. 
+2.1 Key Value Propositions 
+0. Alternative Data Scoring: Utilizes VycePay wallet transactions, VyceTrade supply chain data, 
+and compliance/identity verification to build credit profiles where traditional credit history is 
+unavailable. 
+1. Three-Tier API Architecture: Provides Lite, Pro, and Deep Dive APIs to serve different use 
+cases from rapid pre-screening to custom model development. 
+2. Explainable AI: All scoring decisions include transparent risk drivers to meet regulatory 
+requirements and build user trust. 
+3. Active Learning Pipeline: Continuously improves model accuracy through feedback loops 
+with partner financial institutions. 
+4. Regulatory Compliance: Built with data privacy, PII protection, and audit trail capabilities for 
+financial services regulations. 
+2.2 Target Market 
+VyceScore primarily targets banks and financial institutions in Kenya evaluating loan applications and 
+pre-approved loan marketing campaigns. The platform is designed for global extensibility to serve 
+emerging markets with similar credit infrastructure challenges. 
+2.3 Business Model 
+VyceScore operates on a tiered licensing model based on query volume. Enterprise customers are 
+onboarded through a sales-led process with customizable licensing terms. The platform offers 
+sandbox environments for integration testing and supports white-label embedding for partner 
+banks. 
+2.4 Success Metrics 
+Model Accuracy 
+AUC-ROC > 0.75 for 90+ DPD prediction 
+API Availability 
+99.9% uptime for production APIs 
+Response Time 
+< 500ms for Lite API, < 2s for Pro API 
+Data Freshness 
+Daily batch processing with real-time data ingestion 
+
+---PAGE BREAK---
+Customer Satisfaction 
+NPS > 50 for FI partners 
+
+---PAGE BREAK---
+3. Problem Statement 
+3.1 Market Context 
+In Kenya and many emerging markets, a significant portion of the population and MSMEs remain 
+unbanked or underbanked. Traditional credit scoring models rely heavily on formal credit history, 
+which is unavailable for this segment. This creates a critical gap where creditworthy individuals and 
+businesses are denied access to financial services due to lack of credit data. 
+3.2 Pain Points 
+3.2.1 For Financial Institutions 
+1. High Default Rates: Limited visibility into borrower creditworthiness leads to higher non-
+performing loan ratios. 
+2. Manual Underwriting: Traditional credit assessment processes are time-consuming and 
+resource-intensive. 
+3. Limited Market Reach: Inability to serve the unbanked segment represents missed revenue 
+opportunities. 
+4. Regulatory Pressure: Increasing requirements for explainable credit decisions and fair 
+lending practices. 
+5. Data Fragmentation: Multiple data sources require complex integration and reconciliation. 
+3.2.2 For Borrowers 
+1. Credit Inaccessibility: Lack of formal credit history prevents access to loans and financial 
+services. 
+2. High Interest Rates: When credit is available, it comes with high interest rates due to 
+perceived risk. 
+3. Lengthy Approval Processes: Traditional loan applications require extensive documentation 
+and long waiting periods. 
+4. Opaque Decisions: Borrowers often do not understand why credit applications are rejected. 
+3.3 Current State Analysis 
+The current credit assessment landscape in Kenya relies primarily on: 
+• 
+Credit Reference Bureaus (CRBs) with limited coverage of the population 
+• 
+Manual document review and verification processes 
+• 
+Collateral-based lending that excludes asset-poor borrowers 
+• 
+Relationship-based lending limited to existing bank customers 
+
+---PAGE BREAK---
+3.4 Opportunity 
+The proliferation of digital financial services has created a wealth of alternative data that can 
+indicate creditworthiness: 
+• 
+Mobile money transaction patterns reveal cash flow stability 
+• 
+Digital payment histories demonstrate financial discipline 
+• 
+Supply chain relationships indicate business viability 
+• 
+Merchant activity data shows revenue generation capability 
+VyceScore captures this opportunity by building a comprehensive credit scoring engine that 
+transforms alternative data into actionable credit risk assessments. 
+
+---PAGE BREAK---
+4. Solution Overview 
+VyceScore is a comprehensive credit scoring platform that aggregates data from multiple sources, 
+applies machine learning models to predict credit risk, and delivers scores through a tiered API 
+architecture. The platform is designed with explainability, compliance, and continuous improvement 
+at its core. 
+4.1 Product Tiers 
+4.1.1 VyceScore Lite API 
+Purpose: High-volume, rapid pre-screening by fintechs and financial institutions for initial 
+creditworthiness assessment. 
+Input 
+User's National ID or Passport Number 
+Output 
+VyceScore (300-900) + Network Intelligence Quotient (NIQ) Score 
+Latency Target 
+< 500ms 
+Use Case 
+Pre-screening, marketing campaigns, initial eligibility checks 
+Pricing 
+Per-query pricing with volume discounts 
+4.1.2 VyceScore Pro API 
+Purpose: Full formal underwriting with compliance transparency for loan approval decisions. 
+Input 
+User's National ID or Passport Number + optional additional data 
+Output 
+VyceScore (300-900) + Explainable Top 3 Risk Drivers 
+Latency Target 
+< 2 seconds 
+Use Case 
+Formal loan underwriting, regulatory compliance, detailed risk assessment 
+Pricing 
+Higher per-query rate with premium features 
+4.1.3 Deep Dive API 
+Purpose: Enterprise data and model access for custom partnerships and specialized use cases. 
+Input/Output 
+Strategic licensing environment with custom model development 
+Features 
+Custom scoring models, industry-specific verticals, configurable time 
+horizons 
+Use Case 
+Enterprise partnerships, specialized lending products, white-label solutions 
+Pricing 
+Custom enterprise licensing agreements 
+
+---PAGE BREAK---
+4.2 Core Features 
+4.2.1 Scoring Engine 
+• 
+XGBoost-based gradient boosting model for 90+ DPD prediction 
+• 
+Score range: 300-900 (higher score = lower risk) 
+• 
+12-month prediction horizon (configurable in Deep Dive) 
+• 
+Industry-specific model variants for retail, manufacturing, services, agriculture 
+• 
+Dynamic model selection based on available data quality and quantity 
+4.2.2 Explainability Framework 
+• 
+SHAP values for feature importance calculation 
+• 
+Top 3 risk drivers with directional indicators (positive/negative impact) 
+• 
+Regulatory-compliant explanation format 
+• 
+User-friendly language for borrower communication 
+4.2.3 Data Integration 
+• 
+Daily batch ingestion from VycePay, VyceTrade, and compliance partners 
+• 
+Real-time API endpoints for on-demand scoring 
+• 
+Batch processing for list uploads (hundreds of records per batch) 
+• 
+Data quality validation and anomaly detection 
+4.2.4 Active Learning Pipeline 
+• 
+Continuous model improvement through production feedback 
+• 
+Partner bank loan outcome integration (actual 90+ DPD events) 
+• 
+Automated retraining triggers based on performance degradation 
+• 
+A/B testing framework for model variants 
+4.3 Key Metrics and Score Interpretation 
+The VyceScore (300-900) is interpreted as follows: 
+Score Range 
+Risk Level 
+Interpretation 
+800-900 
+Very Low Risk 
+Excellent creditworthiness 
+700-799 
+Low Risk 
+Good creditworthiness 
+600-699 
+Medium Risk 
+Fair creditworthiness 
+500-599 
+High Risk 
+Poor creditworthiness 
+
+---PAGE BREAK---
+Score Range 
+Risk Level 
+Interpretation 
+300-499 
+Very High Risk 
+Very poor creditworthiness 
+The Network Intelligence Quotient (NIQ) Score measures the strength and diversity of a user's 
+financial network connections, providing additional context for credit decisions. 
+
+---PAGE BREAK---
+5. Data Sources 
+VyceScore aggregates data from three primary source categories to build comprehensive credit 
+profiles. Each data source contributes specific features to the scoring models. 
+5.1 VycePay Wallet Data 
+VycePay Wallet provides digital financial transaction data that reveals cash flow patterns, payment 
+behaviors, and financial stability indicators. 
+5.1.1 Fund Transfer (FT) and Inter-Bank Fund Transfer (IBFT) Transactions 
+Transaction ID 
+Unique identifier for each transaction 
+Timestamp 
+Date and time of transaction 
+Amount 
+Transaction value in local currency 
+Direction 
+Credit (incoming) or Debit (outgoing) 
+Counterparty 
+Masked identifier of other party 
+Transaction Type 
+P2P, merchant payment, bill payment, etc. 
+Status 
+Completed, pending, failed, reversed 
+5.1.2 Remittance Transactions 
+Remittance ID 
+Unique identifier for remittance 
+Source Country 
+Origin country of funds 
+Amount 
+Remittance value 
+Frequency Pattern 
+Regular vs. sporadic remittances 
+Sender Relationship 
+Family, business, personal 
+Timestamp 
+Date and time of receipt 
+5.1.3 Merchant Activity Data 
+Merchant ID 
+Unique merchant identifier 
+Transaction Volume 
+Daily/weekly/monthly transaction count 
+Transaction Value 
+Revenue indicators 
+Customer Count 
+Unique customers served 
+Business Category 
+Retail, services, food, etc. 
+Settlement Patterns 
+Cash flow timing and consistency 
+
+---PAGE BREAK---
+5.2 VyceTrade SME Platform Data 
+VyceTrade provides supply chain and business transaction data that indicates business health and 
+operational stability. 
+5.2.1 Supplier Payments 
+Payment ID 
+Unique payment identifier 
+Supplier ID 
+Masked supplier identifier 
+Amount 
+Payment value 
+Due Date 
+Original payment deadline 
+Actual Payment Date 
+When payment was made 
+Payment Terms 
+Net 30, Net 60, etc. 
+Payment Status 
+On-time, early, late, overdue 
+5.2.2 Invoices 
+Invoice ID 
+Unique invoice identifier 
+Customer ID 
+Masked customer identifier 
+Invoice Amount 
+Total invoice value 
+Issue Date 
+When invoice was issued 
+Due Date 
+Payment deadline 
+Payment Date 
+When payment was received 
+Invoice Status 
+Paid, pending, overdue, written off 
+5.2.3 Supply Chain Links 
+Business ID 
+Unique business identifier 
+Supplier Relationships 
+Count and strength of supplier connections 
+Customer Relationships 
+Count and diversity of customers 
+Network Position 
+Hub, spoke, or peripheral position 
+Transaction Reciprocity 
+Two-way vs. one-way relationships 
+Relationship Duration 
+Length of business relationships 
+5.3 Compliance and Identity Partners 
+Compliance and identity partners provide verification and risk screening data to meet regulatory 
+requirements and enhance fraud detection. 
+
+---PAGE BREAK---
+5.3.1 KYC Verification Data 
+Identity ID 
+Unique identity record identifier 
+ID Type 
+National ID, Passport, Driver's License 
+ID Number 
+Hashed/encrypted identifier 
+Verification Status 
+Verified, pending, failed 
+Verification Date 
+When KYC was completed 
+Biometric Match 
+Face match, fingerprint verification 
+Liveness Check 
+Anti-spoofing verification result 
+5.3.2 AML Screening Data 
+Screening ID 
+Unique screening record 
+Sanctions List Match 
+Match against sanctions databases 
+PEP Status 
+Politically Exposed Person indicator 
+Adverse Media 
+Negative news screening results 
+Risk Rating 
+Low, medium, high risk classification 
+Screening Date 
+When screening was performed 
+Alert Status 
+Clear, under review, escalated 
+5.4 Data Refresh Frequency 
+VycePay Transactions 
+Daily batch (T-1), real-time for critical events 
+VyceTrade Data 
+Daily batch (T-1) 
+KYC/AML Data 
+On-demand for new users, monthly refresh for existing 
+Feature Engineering 
+Daily computation after data ingestion 
+Score Recalculation 
+Nightly batch for all active users 
+5.5 Data Retention Policy 
+All data is retained for 10 years to support historical trend analysis and regulatory requirements. PII 
+is encrypted at rest and in transit. Raw transaction data is anonymized after feature extraction. 
+
+---PAGE BREAK---
+6. Data Flow Architecture 
+This section describes the complete flow of data through the VyceScore system, from source 
+ingestion to score delivery. 
+6.1 High-Level Data Flow 
+The data flow follows an ETL (Extract, Transform, Load) pattern with additional ML inference and 
+feedback loops: 
+1. Data Ingestion: Raw data is extracted from source systems (VycePay, VyceTrade, Compliance 
+Partners) 
+2. Data Validation: Incoming data is validated for completeness, consistency, and quality 
+3. Feature Engineering: Raw data is transformed into ML features and aggregated metrics 
+4. Feature Storage: Engineered features are stored in the feature store for model inference 
+5. Model Inference: ML models generate credit scores and risk predictions 
+6. Score Storage: Generated scores are stored with timestamps for historical tracking 
+7. API Delivery: Scores are delivered via REST APIs to consuming applications 
+8. Feedback Collection: Actual loan outcomes are collected from partner banks 
+9. Model Retraining: Production feedback is used to continuously improve models 
+6.2 Data Flow Diagrams 
+6.2.1 Batch Data Ingestion Flow 
+Daily batch processing handles the bulk of data ingestion and score recalculation: 
+1 
+Scheduler triggers 
+Daily at 02:00 UTC 
+2 
+Extract from VycePay 
+FT/IBFT, remittance, merchant data (T-1) 
+3 
+Extract from VyceTrade 
+Supplier payments, invoices, supply chain data 
+4 
+Data quality checks 
+Validate completeness, detect anomalies 
+5 
+Transform to features 
+Apply feature engineering pipelines 
+6 
+Load to feature store 
+Update feature values with timestamps 
+7 
+Run model inference 
+Generate scores for all active users 
+8 
+Store scores 
+Save to score history with snapshot date 
+9 
+Update API cache 
+Refresh score cache for fast lookups 
+10 
+Generate reports 
+KPI calculations, data quality reports 
+
+---PAGE BREAK---
+6.2.2 Real-Time Score Request Flow 
+On-demand score requests follow a real-time processing path: 
+1 
+API request received 
+National ID provided in request 
+2 
+Authentication 
+Validate API key and rate limits 
+3 
+Check cache 
+Return cached score if fresh (< 24h) 
+4 
+Fetch features 
+Retrieve latest features from feature store 
+5 
+Run inference 
+Execute model prediction pipeline 
+6 
+Generate explanation 
+Calculate SHAP values for top drivers 
+7 
+Format response 
+Build JSON response per API tier 
+8 
+Log request 
+Audit log for compliance and analytics 
+9 
+Return response 
+Deliver score to calling application 
+6.2.3 Batch Upload Processing Flow 
+Bulk score requests for lists of users are processed asynchronously: 
+1 
+Upload batch file 
+CSV/JSON with list of National IDs 
+2 
+Validate file format 
+Check structure and ID validity 
+3 
+Queue for processing 
+Add to batch processing queue 
+4 
+Process in chunks 
+Process 100 records per batch 
+5 
+Fetch features 
+Bulk feature retrieval for efficiency 
+6 
+Run inference 
+Parallel model execution 
+7 
+Compile results 
+Aggregate all scores 
+8 
+Generate output file 
+CSV/JSON with scores 
+9 
+Notify completion 
+Webhook or email notification 
+10 
+Store results 
+Archive for audit trail 
+6.2.4 Active Learning Feedback Flow 
+Production feedback drives continuous model improvement: 
+1 
+Partner bank issues loan 
+Based on VyceScore recommendation 
+2 
+Loan performance 
+tracked 
+Monitor payment behavior over time 
+3 
+90+ DPD event recorded 
+Default or serious delinquency 
+
+---PAGE BREAK---
+4 
+Feedback sent to 
+VyceScore 
+Via secure API with loan outcome 
+5 
+Validate feedback 
+Check data quality and completeness 
+6 
+Add to training pool 
+Store as labeled training example 
+7 
+Trigger retraining 
+When threshold of new labels reached 
+8 
+Evaluate new model 
+Compare performance on holdout set 
+9 
+A/B test deployment 
+Shadow mode then gradual rollout 
+10 
+Full deployment 
+Replace production model 
+6.3 Data Storage Architecture 
+The system uses a multi-tier storage approach optimized for different access patterns: 
+Raw Data Lake 
+Immutable raw data from sources, Parquet format, 10-year retention 
+Feature Store 
+Engineered features, columnar storage, time-series optimized 
+Score History 
+All historical scores with snapshots, partitioned by date 
+API Cache 
+Redis cache for fast score lookups, 24-hour TTL 
+Audit Logs 
+Immutable request/response logs, write-once storage 
+
+---PAGE BREAK---
+7. High-Level Architecture 
+VyceScore follows a microservices architecture designed for scalability, maintainability, and cloud-
+agnostic deployment. The system is composed of loosely coupled services that communicate via 
+well-defined APIs. 
+7.1 Architectural Principles 
+• 
+Cloud-Agnostic: Deployable to any cloud provider or on-premises infrastructure 
+• 
+Microservices: Independent services for scalability and fault isolation 
+• 
+API-First: All functionality exposed through REST APIs 
+• 
+Event-Driven: Asynchronous processing for batch operations and feedback loops 
+• 
+Data Privacy: PII minimization and encryption throughout the pipeline 
+7.2 System Components 
+7.2.1 API Gateway 
+The API Gateway is the entry point for all external requests, handling authentication, rate limiting, 
+and request routing. 
+Authentication 
+API key validation, OAuth 2.0 support 
+Rate Limiting 
+Tier-based limits per customer 
+Request Routing 
+Route to appropriate backend services 
+Load Balancing 
+Distribute requests across service instances 
+SSL Termination 
+Handle HTTPS encryption 
+Request Logging 
+Audit trail for all API calls 
+7.2.2 Authentication Service 
+Manages user authentication, authorization, and session management for the admin UI and partner 
+integrations. 
+User Authentication 
+Username/password, SSO integration 
+API Key Management 
+Generate, rotate, revoke API keys 
+Role-Based Access 
+Admin, Operator, Partner, Read-only roles 
+Session Management 
+JWT tokens with configurable expiry 
+Audit Logging 
+Log all authentication events 
+7.2.3 Scoring Service 
+Core service responsible for credit score calculation and model inference. 
+
+---PAGE BREAK---
+Feature Retrieval 
+Fetch features from feature store 
+Model Inference 
+Execute XGBoost model predictions 
+Explanation Generation 
+Calculate SHAP values for explainability 
+Score Formatting 
+Format response per API tier 
+Caching 
+Cache scores for fast retrieval 
+Batch Processing 
+Handle bulk score requests 
+7.2.4 Feature Engineering Service 
+Transforms raw data into ML-ready features through automated pipelines. 
+Data Ingestion 
+Pull data from source systems 
+Data Validation 
+Quality checks and anomaly detection 
+Feature Computation 
+Calculate aggregated metrics and ratios 
+Feature Store Updates 
+Write features to feature store 
+Feature Monitoring 
+Track feature drift and quality 
+7.2.5 Model Management Service 
+Manages ML model lifecycle including training, versioning, and deployment. 
+Model Training 
+Execute training pipelines 
+Model Versioning 
+Track model versions and artifacts 
+Model Evaluation 
+AUC-ROC, precision, recall metrics 
+Model Deployment 
+A/B testing, canary releases 
+Model Monitoring 
+Track model performance in production 
+7.2.6 Feedback Service 
+Handles collection and processing of production feedback from partner banks. 
+Feedback Ingestion 
+Receive loan outcome data 
+Data Validation 
+Validate feedback format and completeness 
+Label Storage 
+Store ground truth labels 
+Retraining Trigger 
+Initiate model retraining when threshold met 
+Performance Tracking 
+Calculate model accuracy over time 
+7.2.7 Licensing and Billing Service 
+Manages customer licensing tiers, usage tracking, and billing. 
+License Management 
+Define and enforce license tiers 
+
+---PAGE BREAK---
+Usage Tracking 
+Count API calls per customer 
+Quota Enforcement 
+Block requests when limits exceeded 
+Billing Calculation 
+Compute monthly charges 
+Reporting 
+Usage reports for customers 
+7.2.8 Admin UI 
+Web-based administration interface for system management and monitoring. 
+Customer Management 
+Onboard, configure, manage customers 
+User Management 
+Create and manage system users 
+Model Monitoring 
+View model performance dashboards 
+KPI Dashboards 
+Track system and business metrics 
+Audit Logs 
+View and search audit trails 
+Configuration 
+System settings and parameters 
+7.3 Frontend Architecture 
+7.3.1 Admin Portal 
+• 
+Technology: React with TypeScript 
+• 
+State Management: Redux Toolkit 
+• 
+UI Components: Material-UI or Ant Design 
+• 
+Charts: Recharts or Chart.js 
+• 
+Authentication: JWT with refresh tokens 
+7.3.2 Partner Dashboard (White-Label) 
+• 
+Technology: React with TypeScript 
+• 
+Styling: CSS-in-JS for theming support 
+• 
+Embedding: iframe or web component options 
+• 
+API Integration: RESTful API client 
+• 
+Customization: Logo, colors, domain configuration 
+7.4 API Architecture 
+All APIs follow RESTful design principles with JSON request/response format. 
+Protocol 
+HTTPS only 
+Authentication 
+API Key in header (X-API-Key) 
+
+---PAGE BREAK---
+Content Type 
+application/json 
+Versioning 
+URL path versioning (/v1/, /v2/) 
+Rate Limiting 
+Headers: X-RateLimit-Limit, X-RateLimit-Remaining 
+Error Format 
+Standard JSON error response with code and message 
+7.5 Infrastructure Requirements 
+Compute 
+Kubernetes cluster with auto-scaling 
+Database 
+PostgreSQL for relational data, Redis for caching 
+Storage 
+Object storage (S3-compatible) for data lake 
+Message Queue 
+Kafka or RabbitMQ for async processing 
+Monitoring 
+Prometheus + Grafana for metrics 
+Logging 
+ELK stack or cloud-native logging 
+CI/CD 
+GitLab CI or GitHub Actions 
+
+---PAGE BREAK---
+8. Use Cases 
+This section provides comprehensive use case specifications covering all functional areas of the 
+VyceScore platform. Each use case includes actors, preconditions, flow, and postconditions. 
+8.1 Authentication and Access Control 
+UC-AUTH-001: API Key Authentication 
+Use Case 
+API Key Authentication 
+Actor 
+Partner Application 
+Description 
+Authenticate API requests using API key 
+Preconditions 
+1. Partner has valid API key 2. API key is active and not expired 
+Flow 
+1. Partner sends API request with X-API-Key header 2. API Gateway extracts API 
+key from header 3. Authentication Service validates API key 4. Service retrieves 
+customer configuration 5. Service checks rate limit quota 6. If valid, request 
+proceeds to backend service 7. If invalid, return 401 Unauthorized error 
+Postconditions 
+1. Request authenticated and authorized 2. Rate limit counter incremented 3. 
+Request logged to audit trail 
+UC-AUTH-002: Admin User Login 
+Use Case 
+Admin User Login 
+Actor 
+System Administrator 
+Description 
+Access the VyceScore admin portal 
+Preconditions 
+1. User has valid admin account 2. User has not exceeded failed login attempts 
+Flow 
+1. User navigates to admin portal login page 2. User enters username and 
+password 3. System validates credentials against user database 4. System checks 
+MFA if enabled 5. System generates JWT access and refresh tokens 6. System 
+logs login event to audit trail 7. User is redirected to dashboard 
+Postconditions 
+1. User session established 2. Tokens stored in browser storage 3. Last login 
+timestamp updated 
+UC-AUTH-003: Password Reset 
+Use Case 
+Password Reset 
+Actor 
+System User 
+
+---PAGE BREAK---
+Description 
+Reset forgotten password 
+Preconditions 
+1. User has registered email address 
+Flow 
+1. User clicks "Forgot Password" link 2. User enters registered email address 3. 
+System generates reset token with expiry 4. System sends reset email with 
+secure link 5. User clicks link and enters new password 6. System validates token 
+and updates password 7. System invalidates all existing sessions 
+Postconditions 
+1. Password updated in database (hashed) 2. Reset token invalidated 3. 
+Password change logged to audit trail 
+UC-AUTH-004: Session Refresh 
+Use Case 
+Session Refresh 
+Actor 
+Authenticated User 
+Description 
+Refresh expired access token 
+Preconditions 
+1. User has valid refresh token 2. Refresh token has not been revoked 
+Flow 
+1. Client detects access token expiry 2. Client sends refresh request with refresh 
+token 3. System validates refresh token signature 4. System checks token 
+revocation status 5. System generates new access token 6. System rotates 
+refresh token (optional) 7. New tokens returned to client 
+Postconditions 
+1. New access token issued 2. User session extended 3. Token rotation logged 
+8.2 User Management 
+UC-USER-001: Create Admin User 
+Use Case 
+Create Admin User 
+Actor 
+Super Administrator 
+Description 
+Add new administrator to the system 
+Preconditions 
+1. Super Admin is authenticated 2. New user email is unique 
+Flow 
+1. Super Admin navigates to User Management 2. Clicks "Add New User" button 
+3. Enters user details (name, email, role) 4. System validates email uniqueness 5. 
+System generates temporary password 6. System sends welcome email with 
+credentials 7. User record created in database 
+Postconditions 
+1. User account created with temporary password 2. Welcome email sent 3. User 
+must change password on first login 
+
+---PAGE BREAK---
+UC-USER-002: Deactivate User 
+Use Case 
+Deactivate User 
+Actor 
+Administrator 
+Description 
+Disable user access to the system 
+Preconditions 
+1. Admin is authenticated 2. Target user exists and is active 
+Flow 
+1. Admin searches for user in User Management 2. Selects user and clicks 
+"Deactivate" 3. System prompts for confirmation 4. Admin confirms deactivation 
+5. System sets user status to inactive 6. System revokes all active sessions 7. 
+System logs deactivation event 
+Postconditions 
+1. User status changed to inactive 2. All sessions terminated 3. User can no 
+longer authenticate 
+UC-USER-003: Update User Role 
+Use Case 
+Update User Role 
+Actor 
+Super Administrator 
+Description 
+Change user permissions by updating role 
+Preconditions 
+1. Super Admin is authenticated 2. Target user exists 
+Flow 
+1. Super Admin selects user from list 2. Clicks "Edit" button 3. Changes role from 
+dropdown 4. System validates role assignment rules 5. System updates user role 
+in database 6. System updates permissions in session (if active) 7. System logs 
+role change 
+Postconditions 
+1. User role updated 2. Permissions changed immediately 3. Audit trail updated 
+8.3 Customer Management 
+UC-CUST-001: Onboard New Customer 
+Use Case 
+Onboard New Customer 
+Actor 
+Sales Team / Admin 
+Description 
+Register new financial institution as VyceScore customer 
+Preconditions 
+1. Customer has signed licensing agreement 2. Customer has provided technical 
+contact details 
+Flow 
+1. Sales/Admin navigates to Customer Management 2. Clicks "Add Customer" 
+button 3. Enters customer details (name, contact, tier) 4. System generates API 
+key pair 5. System creates customer record 6. System configures license tier 
+
+---PAGE BREAK---
+quotas 7. System sends API credentials to customer 8. Sandbox environment 
+provisioned 
+Postconditions 
+1. Customer record created 2. API keys generated and sent 3. Sandbox access 
+enabled 4. Production access pending activation 
+UC-CUST-002: Configure License Tier 
+Use Case 
+Configure License Tier 
+Actor 
+Administrator 
+Description 
+Set query limits and features for customer 
+Preconditions 
+1. Admin is authenticated 2. Customer exists in system 
+Flow 
+1. Admin selects customer from list 2. Clicks "Configure License" button 3. Selects 
+tier (Lite/Pro/Deep Dive) 4. Sets monthly query limit 5. Configures additional 
+parameters 6. System validates configuration 7. System updates customer 
+license 8. Changes take effect immediately 
+Postconditions 
+1. License tier updated 2. Rate limits applied 3. Customer notified of changes 
+UC-CUST-003: Activate Production Access 
+Use Case 
+Activate Production Access 
+Actor 
+Administrator 
+Description 
+Enable production API access for customer 
+Preconditions 
+1. Customer has completed sandbox testing 2. Customer has signed production 
+agreement 
+Flow 
+1. Admin reviews customer sandbox activity 2. Verifies integration is working 
+correctly 3. Navigates to customer configuration 4. Toggles "Production Access" 
+to enabled 5. System activates production API key 6. System sends production 
+credentials 7. Customer can now query production API 
+Postconditions 
+1. Production API key activated 2. Customer notified 3. Usage tracking begins for 
+billing 
+8.4 Score Retrieval 
+UC-SCORE-001: Retrieve Lite Score 
+Use Case 
+Retrieve Lite Score 
+Actor 
+Partner Application 
+
+---PAGE BREAK---
+Description 
+Get quick credit score for pre-screening 
+Preconditions 
+1. Partner has valid API key 2. Partner has available query quota 3. Subject exists 
+in VyceScore database 
+Flow 
+1. Partner sends GET /v1/scores/lite/{nationalId} 2. API Gateway authenticates 
+request 3. Rate limit checked against customer quota 4. Scoring Service checks 
+cache for recent score 5. If cache miss, fetch features from Feature Store 6. Run 
+model inference 7. Format Lite API response 8. Cache result for 24 hours 9. 
+Return response to partner 10. Log request to audit trail 
+Postconditions 
+1. Score returned to partner 2. Query counted against quota 3. Request logged 
+for audit 
+UC-SCORE-002: Retrieve Pro Score 
+Use Case 
+Retrieve Pro Score 
+Actor 
+Partner Application 
+Description 
+Get detailed score with risk drivers 
+Preconditions 
+1. Partner has Pro or higher license 2. Partner has available query quota 3. 
+Subject exists in database 
+Flow 
+1. Partner sends GET /v1/scores/pro/{nationalId} 2. API Gateway validates license 
+tier 3. Scoring Service retrieves features 4. Model inference executed 5. SHAP 
+values calculated for explainability 6. Top 3 risk drivers identified 7. Response 
+formatted with explanations 8. Result returned to partner 9. Request logged with 
+full details 
+Postconditions 
+1. Score with explanations returned 2. Higher query cost deducted 3. Full audit 
+record created 
+UC-SCORE-003: Batch Score Upload 
+Use Case 
+Batch Score Upload 
+Actor 
+Partner Application 
+Description 
+Get scores for multiple subjects in batch 
+Preconditions 
+1. Partner has batch processing enabled 2. File format is CSV or JSON 3. File size 
+under maximum limit (10MB) 
+Flow 
+1. Partner POSTs file to /v1/scores/batch 2. System validates file format and 
+content 3. Batch job queued for processing 4. Partner receives job ID for tracking 
+5. Background processor handles batch 6. Scores calculated for all records 7. 
+Results compiled into output file 8. Partner notified of completion 9. Results 
+available for download 
+
+---PAGE BREAK---
+Postconditions 
+1. Batch job completed 2. Results file generated 3. Partner notified via 
+webhook/email 
+8.5 Feedback and Model Improvement 
+UC-FDBK-001: Submit Loan Outcome 
+Use Case 
+Submit Loan Outcome 
+Actor 
+Partner Bank 
+Description 
+Provide actual loan performance data 
+Preconditions 
+1. Partner has active integration 2. Loan was scored by VyceScore 3. Loan has 
+reached outcome milestone 
+Flow 
+1. Partner sends POST /v1/feedback/loan-outcome 2. Request includes loan ID 
+and outcome data 3. System validates loan reference exists 4. Outcome data 
+validated (90+ DPD flag) 5. Label stored in training database 6. Model 
+performance metrics updated 7. Retraining trigger evaluated 8. Acknowledgment 
+sent to partner 
+Postconditions 
+1. Ground truth label stored 2. Model accuracy metrics updated 3. Retraining 
+may be triggered 
+UC-FDBK-002: Trigger Model Retraining 
+Use Case 
+Trigger Model Retraining 
+Actor 
+System (Automated) / Data Scientist 
+Description 
+Initiate model retraining with new data 
+Preconditions 
+1. Sufficient new labels collected (min 1000) 2. Model performance below 
+threshold 3. Or manual trigger by authorized user 
+Flow 
+1. Trigger condition met 2. Training pipeline initiated 3. Training data assembled 
+from labels 4. Model training executed 5. New model evaluated on holdout set 6. 
+If performance improved, proceed to validation 7. Model validation and approval 
+8. A/B test deployment 9. Full rollout if test successful 
+Postconditions 
+1. New model version created 2. Model deployed to production 3. Previous 
+version archived 
+
+---PAGE BREAK---
+8.6 Monitoring and Reporting 
+UC-MON-001: View KPI Dashboard 
+Use Case 
+View KPI Dashboard 
+Actor 
+Administrator / Analyst 
+Description 
+Monitor system and business metrics 
+Preconditions 
+1. User is authenticated 2. User has analytics role permission 
+Flow 
+1. User navigates to Dashboard section 2. System loads KPI data from time-series 
+DB 3. Charts and metrics rendered 4. User can filter by date range 5. User can 
+drill down into specific metrics 6. Export options available for reports 
+Postconditions 
+1. Dashboard displayed with current data 2. User can interact with visualizations 
+UC-MON-002: Query Audit Logs 
+Use Case 
+Query Audit Logs 
+Actor 
+Administrator / Compliance Officer 
+Description 
+Search and review system audit trail 
+Preconditions 
+1. User is authenticated 2. User has audit access permission 
+Flow 
+1. User navigates to Audit Logs section 2. User enters search criteria 3. System 
+queries audit database 4. Results displayed with pagination 5. User can filter by 
+date, user, action 6. Detailed view available for each event 7. Export to CSV/PDF 
+available 
+Postconditions 
+1. Audit records retrieved 2. Compliance review completed 
+
+---PAGE BREAK---
+9. API Specifications 
+This section provides detailed specifications for all VyceScore APIs, including endpoints, 
+request/response formats, error codes, and rate limits. 
+9.1 Authentication 
+All API requests require authentication via API key in the header: 
+X-API-Key: your_api_key_here 
+9.2 VyceScore Lite API 
+9.2.1 Get Lite Score 
+Endpoint 
+GET /v1/scores/lite/{nationalId} 
+Description 
+Retrieve credit score and NIQ score for a subject 
+License Tiers 
+Lite, Pro, Deep Dive 
+Rate Limit 
+1000/hour 
+Parameters 
+Name | Location | Type | Required | Description nationalId | path | string | Yes | 
+National ID or Passport Number 
+Responses 
+Code | Meaning | Description 200 | Success | { "vyceScore": 750, "niqScore": 82, 
+... } 401 | Unauthorized | Invalid API key 404 | Not Found | Subject not found 429 
+| Rate Limited | Quota exceeded 
+Response Schema: 
+{ 
+  "vyceScore": 750, 
+  "niqScore": 82, 
+  "scoreDate": "2026-03-08", 
+  "scoreVersion": "v2.3.1", 
+  "subjectId": "hashed_id_value", 
+  "metadata": { 
+    "modelVersion": "xgb_2026_03", 
+    "featureDate": "2026-03-07", 
+    "dataQuality": "high" 
+  } 
+} 
+9.3 VyceScore Pro API 
+9.3.1 Get Pro Score 
+Endpoint 
+GET /v1/scores/pro/{nationalId} 
+Description 
+Retrieve detailed score with explainable risk drivers 
+
+---PAGE BREAK---
+License Tiers 
+Pro, Deep Dive 
+Rate Limit 
+500/hour 
+Parameters 
+Name | Location | Type | Required | Description nationalId | path | string | Yes | 
+National ID or Passport Number includeHistory | query | boolean | No | Include 
+score history (default: false) 
+Responses 
+Code | Meaning | Description 200 | Success | Score with explanations returned 
+401 | Unauthorized | Invalid API key 403 | Forbidden | License tier insufficient 
+404 | Not Found | Subject not found 
+Response Schema: 
+{ 
+  "vyceScore": 750, 
+  "niqScore": 82, 
+  "riskDrivers": [ 
+    { 
+      "factor": "Payment Consistency", 
+      "impact": "positive", 
+      "description": "Regular on-time payments over 12 months", 
+      "contribution": 45 
+    }, 
+    { 
+      "factor": "Cash Flow Volatility", 
+      "impact": "negative", 
+      "description": "High variance in monthly transaction volume", 
+      "contribution": -28 
+    }, 
+    { 
+      "factor": "Network Diversity", 
+      "impact": "positive", 
+      "description": "Strong connections across multiple merchant categories", 
+      "contribution": 23 
+    } 
+  ], 
+  "scoreDate": "2026-03-08", 
+  "modelVersion": "xgb_2026_03", 
+  "predictionHorizon": "12_months", 
+  "confidenceInterval": { 
+    "lower": 735, 
+    "upper": 765 
+  } 
+} 
+9.4 Deep Dive API 
+9.4.1 Get Custom Score 
+Endpoint 
+POST /v1/scores/custom 
+Description 
+Retrieve score using custom model configuration 
+License Tiers 
+Deep Dive 
+
+---PAGE BREAK---
+Rate Limit 
+200/hour 
+Parameters 
+Name | Location | Type | Required | Description modelConfig | body | object | 
+Yes | Custom model configuration subjectId | body | string | Yes | Subject 
+identifier 
+Responses 
+Code | Meaning | Description 200 | Success | Custom score returned 400 | Bad 
+Request | Invalid model configuration 401 | Unauthorized | Invalid API key 422 | 
+Unprocessable | Insufficient data for custom model 
+9.5 Batch Processing API 
+9.5.1 Submit Batch Job 
+Endpoint 
+POST /v1/batches 
+Description 
+Submit batch scoring job 
+License Tiers 
+Pro, Deep Dive 
+Rate Limit 
+10/hour 
+Parameters 
+Name | Location | Type | Required | Description file | body | file | Yes | 
+CSV/JSON file with subject IDs apiTier | body | string | Yes | lite, pro, or custom 
+Responses 
+Code | Meaning | Description 202 | Accepted | Batch job queued 400 | Bad 
+Request | Invalid file format 413 | Payload Too Large | File exceeds 10MB limit 
+9.5.2 Get Batch Status 
+Endpoint 
+GET /v1/batches/{batchId} 
+Description 
+Check status of batch job 
+License Tiers 
+Lite, Pro, Deep Dive 
+Rate Limit 
+100/hour 
+Parameters 
+Name | Location | Type | Required | Description batchId | path | string | Yes | 
+Batch job identifier 
+Responses 
+Code | Meaning | Description 200 | Success | Batch status returned 404 | Not 
+Found | Batch ID not found 
+9.6 Feedback API 
+9.6.1 Submit Loan Outcome 
+Endpoint 
+POST /v1/feedback/loan-outcome 
+Description 
+Submit actual loan performance data 
+
+---PAGE BREAK---
+License Tiers 
+Partner Integration 
+Rate Limit 
+Unlimited 
+Parameters 
+Name | Location | Type | Required | Description loanId | body | string | Yes | 
+Unique loan identifier subjectId | body | string | Yes | Subject National ID 
+loanAmount | body | number | Yes | Original loan amount disbursementDate | 
+body | date | Yes | When loan was disbursed outcomeDate | body | date | Yes | 
+When outcome was determined daysPastDue | body | integer | Yes | Maximum 
+DPD reached isDefault | body | boolean | Yes | True if 90+ DPD 
+Responses 
+Code | Meaning | Description 201 | Created | Feedback recorded 400 | Bad 
+Request | Invalid data format 409 | Conflict | Duplicate loan ID 
+9.7 Admin API 
+9.7.1 List Customers 
+Endpoint 
+GET /v1/admin/customers 
+Description 
+List all customers with filtering 
+License Tiers 
+Admin 
+Rate Limit 
+100/hour 
+Parameters 
+Name | Location | Type | Required | Description status | query | string | No | 
+Filter by status tier | query | string | No | Filter by license tier page | query | 
+integer | No | Page number (default: 1) limit | query | integer | No | Results per 
+page (default: 50) 
+Responses 
+Code | Meaning | Description 200 | Success | Customer list returned 403 | 
+Forbidden | Insufficient permissions 
+9.7.2 Update Customer License 
+Endpoint 
+PUT /v1/admin/customers/{customerId}/license 
+Description 
+Update customer license configuration 
+License Tiers 
+Admin 
+Rate Limit 
+50/hour 
+Parameters 
+Name | Location | Type | Required | Description customerId | path | string | Yes 
+| Customer identifier tier | body | string | Yes | License tier queryLimit | body | 
+integer | Yes | Monthly query limit features | body | object | Yes | Enabled 
+features 
+Responses 
+Code | Meaning | Description 200 | Success | License updated 400 | Bad Request 
+| Invalid configuration 404 | Not Found | Customer not found 
+
+---PAGE BREAK---
+9.8 Error Handling 
+All errors follow a standard format: 
+{ 
+  "error": { 
+    "code": "RATE_LIMIT_EXCEEDED", 
+    "message": "Monthly query quota exceeded. Contact support to upgrade your 
+plan.", 
+    "details": { 
+      "quota": 10000, 
+      "used": 10000, 
+      "resetsAt": "2026-04-01T00:00:00Z" 
+    } 
+  } 
+} 
+9.9 Rate Limit Headers 
+All API responses include rate limit information: 
+X-RateLimit-Limit 
+Maximum requests allowed per window 
+X-RateLimit-Remaining 
+Requests remaining in current window 
+X-RateLimit-Reset 
+Unix timestamp when limit resets 
+X-RateLimit-Window 
+Time window in seconds 
+
+---PAGE BREAK---
+10. KPIs and Metrics 
+This section defines all Key Performance Indicators (KPIs) for the VyceScore platform, including their 
+formulas, frequencies, and snapshot requirements. All KPIs maintain historical snapshots to enable 
+trend analysis. 
+10.1 Model Performance KPIs 
+10.1.1 AUC-ROC Score 
+KPI Name 
+AUC-ROC 
+Full Name 
+Area Under the Receiver Operating Characteristic Curve 
+Frequency 
+Daily 
+Purpose 
+Measure model's ability to distinguish between defaulters and non-defaulters 
+Formula 
+AUC = integral from 0 to 1 of TPR(FPR^-1(x)) dx 
+Retention 
+Daily snapshots retained for 10 years 
+Target 
+> 0.75 
+10.1.2 Precision at K 
+KPI Name 
+Precision@K 
+Full Name 
+Precision at top K predictions 
+Frequency 
+Weekly 
+Purpose 
+Measure accuracy of highest-risk predictions 
+Formula 
+Precision@K = True Positives in top K / K 
+Retention 
+Weekly snapshots retained for 10 years 
+Target 
+> 0.30 for K=1000 
+10.1.3 Calibration Error 
+KPI Name 
+Expected Calibration Error 
+Full Name 
+Difference between predicted and actual probabilities 
+Frequency 
+Weekly 
+Purpose 
+Ensure probability predictions are well-calibrated 
+Formula 
+ECE = sum over bins of |bin_size * (avg_confidence - accuracy)| 
+Retention 
+Weekly snapshots retained for 10 years 
+
+---PAGE BREAK---
+Target 
+< 0.05 
+10.2 Business KPIs 
+10.2.1 Daily Query Volume 
+KPI Name 
+Daily Queries 
+Full Name 
+Total API requests per day 
+Frequency 
+Daily 
+Purpose 
+Track system usage and growth 
+Formula 
+Sum of all API requests in 24-hour period 
+Retention 
+Daily snapshots retained for 10 years 
+Target 
+Growth rate > 10% MoM 
+10.2.2 Customer Adoption Rate 
+KPI Name 
+Adoption Rate 
+Full Name 
+Percentage of onboarded customers actively using API 
+Frequency 
+Monthly 
+Purpose 
+Measure customer engagement 
+Formula 
+Active Customers / Total Onboarded Customers * 100 
+Retention 
+Monthly snapshots retained for 10 years 
+Target 
+> 80% 
+10.2.3 Revenue Per Customer 
+KPI Name 
+ARPU 
+Full Name 
+Average Revenue Per User (Customer) 
+Frequency 
+Monthly 
+Purpose 
+Track revenue generation per customer 
+Formula 
+Total Monthly Revenue / Number of Active Customers 
+Retention 
+Monthly snapshots retained for 10 years 
+Target 
+Growth trend positive 
+
+---PAGE BREAK---
+10.3 Data Quality KPIs 
+10.3.1 Data Completeness 
+KPI Name 
+Data Completeness 
+Full Name 
+Percentage of required fields populated 
+Frequency 
+Daily 
+Purpose 
+Ensure data quality for model inputs 
+Formula 
+Populated Fields / Total Required Fields * 100 
+Retention 
+Daily snapshots retained for 10 years 
+Target 
+> 95% 
+10.3.2 Feature Freshness 
+KPI Name 
+Feature Freshness 
+Full Name 
+Average age of features used in scoring 
+Frequency 
+Daily 
+Purpose 
+Ensure scores use recent data 
+Formula 
+Average of (Current Date - Feature Date) across all features 
+Retention 
+Daily snapshots retained for 10 years 
+Target 
+< 48 hours 
+10.4 System Performance KPIs 
+10.4.1 API Response Time 
+KPI Name 
+P95 Response Time 
+Full Name 
+95th percentile API response time 
+Frequency 
+Hourly 
+Purpose 
+Monitor API performance 
+Formula 
+95th percentile of response times in hour 
+Retention 
+Hourly snapshots retained for 1 year, daily for 10 years 
+Target 
+Lite: < 500ms, Pro: < 2s 
+
+---PAGE BREAK---
+10.4.2 System Availability 
+KPI Name 
+Uptime 
+Full Name 
+Percentage of time system is available 
+Frequency 
+Monthly 
+Purpose 
+Measure system reliability 
+Formula 
+(Total Time - Downtime) / Total Time * 100 
+Retention 
+Monthly snapshots retained for 10 years 
+Target 
+> 99.9% 
+10.4.3 Error Rate 
+KPI Name 
+Error Rate 
+Full Name 
+Percentage of requests resulting in errors 
+Frequency 
+Hourly 
+Purpose 
+Monitor system health 
+Formula 
+Error Responses / Total Responses * 100 
+Retention 
+Hourly snapshots retained for 1 year, daily for 10 years 
+Target 
+< 0.1% 
+10.5 KPI Snapshot Schema 
+All KPI snapshots follow this schema for consistent storage and retrieval: 
+{ 
+  "kpiId": "auc_roc", 
+  "kpiName": "AUC-ROC Score", 
+  "snapshotDate": "2026-03-08", 
+  "snapshotPeriod": "daily", 
+  "value": 0.78, 
+  "unit": "ratio", 
+  "target": 0.75, 
+  "status": "meeting_target", 
+  "dimensions": { 
+    "modelVersion": "xgb_2026_03", 
+    "segment": "all" 
+  }, 
+  "metadata": { 
+    "calculationTime": "2026-03-08T03:00:00Z", 
+    "dataPoints": 50000 
+  } 
+} 
+
+---PAGE BREAK---
+10.6 KPI Calculation Schedule 
+Hourly KPIs 
+Calculated at :05 past each hour 
+Daily KPIs 
+Calculated at 03:00 UTC daily 
+Weekly KPIs 
+Calculated every Monday at 04:00 UTC 
+Monthly KPIs 
+Calculated on 1st of month at 05:00 UTC 
+
+---PAGE BREAK---
+11. Data and Domain Model 
+This section defines the data model and domain entities for the VyceScore platform. The model is 
+designed to support the scoring pipeline, audit requirements, and historical analysis. 
+11.1 Core Domain Entities 
+11.1.1 Subject Entity 
+Represents an individual or business being scored. PII is encrypted or hashed. 
+Field 
+Type 
+Key 
+Description 
+subject_id 
+UUID 
+PK 
+Unique identifier 
+subject_type 
+ENUM 
+ 
+INDIVIDUAL or BUSINESS 
+id_hash 
+VARCHAR(64) 
+Unique 
+SHA-256 hash of National ID 
+created_at 
+TIMESTAMP 
+ 
+Record creation time 
+updated_at 
+TIMESTAMP 
+ 
+Last update time 
+kyc_status 
+ENUM 
+ 
+VERIFIED, PENDING, FAILED 
+aml_status 
+ENUM 
+ 
+CLEAR, REVIEW, FLAGGED 
+11.1.2 Score Entity 
+Stores all credit scores with full history for trend analysis. 
+Field 
+Type 
+Key 
+Description 
+score_id 
+UUID 
+PK 
+Unique identifier 
+subject_id 
+UUID 
+FK 
+Reference to Subject 
+vyce_score 
+INTEGER 
+ 
+Score value (300-900) 
+niq_score 
+INTEGER 
+ 
+Network Intelligence Quotient (0-100) 
+score_date 
+DATE 
+ 
+Date score was calculated 
+model_version 
+VARCHAR(50) 
+ 
+Model version used 
+prediction_horizon 
+INTEGER 
+ 
+Months (30, 90, 365) 
+confidence_lower 
+INTEGER 
+ 
+Lower bound of confidence interval 
+confidence_upper 
+INTEGER 
+ 
+Upper bound of confidence interval 
+feature_snapshot_id 
+UUID 
+FK 
+Reference to features used 
+11.1.3 Risk Driver Entity 
+Stores explainable risk factors for each score. 
+
+---PAGE BREAK---
+Field 
+Type 
+Key 
+Description 
+driver_id 
+UUID 
+PK 
+Unique identifier 
+score_id 
+UUID 
+FK 
+Reference to Score 
+rank 
+INTEGER 
+ 
+Importance rank (1, 2, 3) 
+factor_name 
+VARCHAR(100) 
+ 
+Human-readable factor name 
+impact 
+ENUM 
+ 
+POSITIVE or NEGATIVE 
+description 
+TEXT 
+ 
+Detailed explanation 
+shap_value 
+DECIMAL 
+ 
+SHAP contribution value 
+feature_name 
+VARCHAR(100) 
+ 
+Internal feature identifier 
+11.1.4 Feature Entity 
+Stores engineered features for model input. 
+Field 
+Type 
+Key 
+Description 
+feature_id 
+UUID 
+PK 
+Unique identifier 
+subject_id 
+UUID 
+FK 
+Reference to Subject 
+feature_date 
+DATE 
+ 
+Date features were calculated 
+feature_name 
+VARCHAR(100) 
+ 
+Feature identifier 
+feature_value 
+DECIMAL 
+ 
+Numeric feature value 
+feature_category 
+VARCHAR(50) 
+ 
+Transaction, Network, Compliance, etc. 
+data_source 
+VARCHAR(50) 
+ 
+VycePay, VyceTrade, Compliance 
+quality_score 
+DECIMAL 
+ 
+Data quality indicator (0-1) 
+11.1.5 Customer Entity 
+Represents a financial institution using VyceScore. 
+Field 
+Type 
+Key 
+Description 
+customer_id 
+UUID 
+PK 
+Unique identifier 
+name 
+VARCHAR(200) 
+ 
+Organization name 
+license_tier 
+ENUM 
+ 
+LITE, PRO, DEEP_DIVE 
+status 
+ENUM 
+ 
+PENDING, ACTIVE, SUSPENDED, 
+TERMINATED 
+api_key_hash 
+VARCHAR(64) 
+ 
+Hashed API key 
+monthly_query_limit 
+INTEGER 
+ 
+Maximum queries per month 
+created_at 
+TIMESTAMP 
+ 
+Account creation time 
+
+---PAGE BREAK---
+Field 
+Type 
+Key 
+Description 
+sandbox_enabled 
+BOOLEAN 
+ 
+Sandbox access flag 
+production_enabled 
+BOOLEAN 
+ 
+Production access flag 
+11.1.6 API Request Log Entity 
+Audit trail for all API requests. 
+Field 
+Type 
+Key 
+Description 
+log_id 
+UUID 
+PK 
+Unique identifier 
+customer_id 
+UUID 
+FK 
+Reference to Customer 
+request_time 
+TIMESTAMP 
+ 
+Request timestamp 
+endpoint 
+VARCHAR(200) 
+ 
+API endpoint called 
+subject_id 
+UUID 
+FK 
+Reference to Subject (if applicable) 
+response_status 
+INTEGER 
+ 
+HTTP status code 
+response_time_ms 
+INTEGER 
+ 
+Response time in milliseconds 
+query_cost 
+INTEGER 
+ 
+Queries deducted from quota 
+ip_address 
+VARCHAR(45) 
+ 
+Client IP (hashed) 
+11.2 Entity Relationship Diagram 
+Key relationships between entities: 
+• 
+Subject 1:N Score (A subject has many historical scores) 
+• 
+Score 1:N RiskDriver (Each score has multiple risk drivers) 
+• 
+Subject 1:N Feature (A subject has features for multiple dates) 
+• 
+Customer 1:N ApiRequestLog (A customer makes many API requests) 
+• 
+Score N:1 Feature (Scores reference the features used for calculation) 
+11.3 Feature Categories 
+11.3.1 Transaction Features 
+Derived from VycePay wallet data: 
+tx_volume_30d 
+Number of transactions in last 30 days 
+tx_value_30d 
+Total transaction value in last 30 days 
+tx_volume_volatility 
+Coefficient of variation in monthly volume 
+incoming_outgoing_ratio 
+Ratio of incoming to outgoing transactions 
+
+---PAGE BREAK---
+avg_transaction_size 
+Average value per transaction 
+max_single_transaction 
+Largest transaction value 
+days_since_last_tx 
+Days since most recent transaction 
+unique_counterparties_30d 
+Number of unique transaction partners 
+11.3.2 Network Features 
+Derived from transaction network analysis: 
+network_degree 
+Number of direct connections 
+network_clustering 
+Clustering coefficient of local network 
+network_betweenness 
+Betweenness centrality in network 
+reciprocal_relationships 
+Count of two-way transaction relationships 
+merchant_diversity 
+Shannon diversity of merchant categories 
+high_activity_neighbors 
+Count of neighbors with high transaction volume 
+11.3.3 Supply Chain Features 
+Derived from VyceTrade data: 
+supplier_payment_punctuality 
+Percentage of on-time supplier payments 
+invoice_collection_days 
+Average days to collect invoice payments 
+supply_chain_depth 
+Number of tiers in supply chain 
+customer_concentration 
+Revenue concentration across customers 
+supplier_diversification 
+Number of active suppliers 
+days_payable_outstanding 
+Average days to pay suppliers 
+11.3.4 Compliance Features 
+Derived from KYC/AML data: 
+kyc_verification_days 
+Days since KYC verification 
+aml_risk_score 
+AML screening risk rating 
+identity_match_confidence 
+Biometric verification confidence 
+sanctions_list_flag 
+Boolean: on sanctions list 
+pep_flag 
+Boolean: politically exposed person 
+11.4 Data Partitioning Strategy 
+Tables are partitioned for performance and manageability: 
+
+---PAGE BREAK---
+Score 
+Partitioned by score_date (monthly) 
+Feature 
+Partitioned by feature_date (monthly) 
+ApiRequestLog 
+Partitioned by request_time (daily) 
+RawTransaction 
+Partitioned by transaction_date (daily) 
+
+---PAGE BREAK---
+12. AI/ML Models and Pipeline 
+This section provides comprehensive specifications for the machine learning models, training 
+pipelines, and active learning infrastructure that powers VyceScore. 
+12.1 Model Architecture 
+12.1.1 Primary Model: XGBoost Classifier 
+Model Type 
+Gradient Boosting Machine (XGBoost) 
+Target Variable 
+Binary: 1 if 90+ DPD within 12 months, 0 otherwise 
+Prediction Output 
+Probability of default (0-1) 
+Score Conversion 
+vyceScore = 300 + (probability * 600) 
+Feature Count 
+150-200 engineered features 
+Training Data Size 
+Minimum 50,000 labeled examples 
+12.1.2 Model Hyperparameters 
+max_depth 
+6 
+learning_rate 
+0.05 
+n_estimators 
+500 
+subsample 
+0.8 
+colsample_bytree 
+0.8 
+min_child_weight 
+3 
+gamma 
+0.1 
+scale_pos_weight 
+3 
+12.2 Training Data Generation 
+12.2.1 Phase 1: Vyce-Observed Distress (VOD) 
+Initial training uses internal financial stress signals as proxy labels since formal default data is scarce 
+for unbanked MSMEs. 
+10. VOD Signal Definition: Internal indicators of financial distress derived from transaction 
+patterns 
+11. GOS Index Volatility: Sudden erratic changes in the GOS (Gross Operating Surrogate) Index 
+12. CBLRI Drop: Massive cash-outs dropping the CBLRI (Core Balance Liquidity Ratio Index) 
+13. Transaction Pattern Breakdown: Significant deviation from established transaction patterns 
+
+---PAGE BREAK---
+14. Label Assignment: Users exhibiting VOD signals are labeled as high-risk (positive class) 
+12.2.2 VOD Signal Calculation 
+# GOS Index (Gross Operating Surrogate) 
+gos_index = ( 
+    (incoming_tx_value_30d - outgoing_tx_value_30d) / 
+    max(incoming_tx_value_30d + outgoing_tx_value_30d, 1) 
+) 
+ 
+# CBLRI (Core Balance Liquidity Ratio Index) 
+cblri = ( 
+    avg_daily_balance_30d / 
+    max(avg_daily_balance_90d, 1) 
+) 
+ 
+# VOD Flag 
+vod_flag = ( 
+    (gos_index_volatility > threshold_gos) OR 
+    (cblri_drop_percent > threshold_cblri) OR 
+    (tx_pattern_zscore > threshold_pattern) 
+) 
+12.2.3 Phase 2: Production Ground Truth 
+As partner banks issue loans based on VyceScore recommendations, actual loan outcomes provide 
+ground truth labels: 
+15. Partner bank issues loan to user scored by VyceScore 
+16. Loan performance tracked over 12-month period 
+17. 90+ Days Past Due (DPD) event recorded as default 
+18. Partner submits loan outcome via Feedback API 
+19. Ground truth label added to training pool 
+12.3 Active Learning Pipeline 
+12.3.1 Pipeline Overview 
+The active learning pipeline continuously improves model accuracy through production feedback: 
+1 
+Score Users 
+VyceScore identifies riskiest and safest users 
+2 
+Issue Loans 
+Partner banks issue micro-loans to scored users 
+3 
+Track Performance 
+Monitor loan repayment behavior 
+4 
+Collect Feedback 
+Partner submits actual loan outcomes 
+5 
+Validate Labels 
+Quality checks on incoming labels 
+6 
+Add to Pool 
+Store as high-value training examples 
+
+---PAGE BREAK---
+7 
+Trigger Check 
+Evaluate if retraining threshold met 
+8 
+Retrain Model 
+Execute training with new data 
+9 
+Evaluate 
+Compare new model vs. current 
+10 
+Deploy 
+A/B test then full rollout 
+12.3.2 Retraining Triggers 
+New Labels Threshold 
+Retrain when 1,000+ new labels collected 
+Performance Degradation 
+Retrain if AUC-ROC drops below 0.72 
+Scheduled Retraining 
+Monthly retraining regardless of triggers 
+Manual Trigger 
+Data scientist can manually initiate retraining 
+12.3.3 Model Evaluation 
+New models are evaluated before deployment: 
+Holdout Test Set 
+20% of data held back for final evaluation 
+AUC-ROC 
+Primary metric, must exceed 0.75 
+Precision@1000 
+Must exceed 0.30 
+Calibration 
+Expected Calibration Error < 0.05 
+Fairness Metrics 
+Check for demographic parity across segments 
+12.4 Explainability Framework 
+12.4.1 SHAP Values 
+SHAP (SHapley Additive exPlanations) values provide feature-level explanations: 
+• 
+SHAP values indicate each feature's contribution to the prediction 
+• 
+Positive SHAP values increase default probability (lower score) 
+• 
+Negative SHAP values decrease default probability (higher score) 
+• 
+Values are normalized to percentage contribution for user presentation 
+12.4.2 Top Risk Drivers Selection 
+# Calculate absolute SHAP values 
+shap_abs = abs(shap_values) 
+ 
+# Sort features by contribution 
+sorted_features = argsort(shap_abs)[::-1] 
+ 
+# Select top 3 drivers 
+
+---PAGE BREAK---
+top_3 = sorted_features[:3] 
+ 
+# Format for API response 
+risk_drivers = [] 
+for i in top_3: 
+    risk_drivers.append({ 
+        "factor": feature_names[i], 
+        "impact": "positive" if shap_values[i] > 0 else "negative", 
+        "description": generate_description(feature_names[i]), 
+        "contribution": round(shap_abs[i] / sum(shap_abs) * 100) 
+    }) 
+12.5 Model Versioning and Deployment 
+12.5.1 Model Registry 
+All models are versioned and tracked in the Model Registry: 
+Model ID 
+Unique identifier (e.g., xgb_2026_03_v2) 
+Training Date 
+When model was trained 
+Training Data 
+Reference to training dataset 
+Hyperparameters 
+JSON of model parameters 
+Metrics 
+AUC-ROC, Precision, Calibration 
+Status 
+STAGING, PRODUCTION, ARCHIVED 
+Artifacts 
+Model binary, feature list, preprocessing code 
+12.5.2 Deployment Strategy 
+20. Shadow Mode: New model runs in parallel without affecting scores 
+21. Canary Deployment: 5% of traffic routed to new model 
+22. A/B Testing: Compare performance between old and new models 
+23. Full Rollout: 100% traffic to new model after validation 
+24. Rollback: Automatic rollback if error rate exceeds threshold 
+12.6 Feature Store 
+The Feature Store centralizes feature computation and serving: 
+Online Store 
+Redis cache for low-latency feature serving 
+Offline Store 
+Data lake for batch training data generation 
+Feature Registry 
+Catalog of all features with metadata 
+Feature Monitoring 
+Track drift, quality, and freshness 
+
+---PAGE BREAK---
+13. Security and Compliance 
+VyceScore is designed with security and compliance as foundational principles, meeting regulatory 
+requirements for financial services in Kenya and globally. 
+13.1 Data Privacy 
+13.1.1 PII Handling 
+Personal Identifiable Information is minimized and protected throughout the system: 
+25. PII Minimization: Only store necessary PII; use hashed identifiers where possible 
+26. Encryption at Rest: All PII encrypted using AES-256 
+27. Encryption in Transit: TLS 1.3 for all data transmission 
+28. Key Management: Hardware Security Modules (HSM) for key storage 
+29. Access Control: Role-based access to PII with audit logging 
+30. Data Retention: PII retained only as long as legally required 
+13.1.2 Data Anonymization 
+Hashing 
+National IDs stored as SHA-256 hashes 
+Tokenization 
+Replace sensitive values with non-sensitive tokens 
+Aggregation 
+Raw transactions aggregated before feature extraction 
+K-Anonymity 
+Ensure records cannot be uniquely identified 
+13.2 Regulatory Compliance 
+13.2.1 Kenya Data Protection Act 
+Compliance with Kenya Data Protection Act 2019: 
+• 
+Lawful basis for data processing (legitimate interest for credit assessment) 
+• 
+Data subject rights (access, correction, deletion requests) 
+• 
+Data Protection Impact Assessment (DPIA) completed 
+• 
+Registered with Office of the Data Protection Commissioner 
+• 
+Cross-border data transfer safeguards in place 
+13.2.2 Central Bank of Kenya Requirements 
+Compliance with CBK guidelines for credit reference bureaus: 
+• 
+Explainable credit decisions with documented rationale 
+• 
+Fair lending practices without discriminatory factors 
+
+---PAGE BREAK---
+• 
+Accurate and up-to-date credit information 
+• 
+Dispute resolution process for data corrections 
+• 
+Regular reporting to regulatory authorities 
+13.2.3 International Standards 
+ISO 27001 
+Information Security Management System 
+SOC 2 Type II 
+Security, Availability, Confidentiality controls 
+PCI DSS 
+Payment Card Industry Data Security Standard (if applicable) 
+GDPR 
+General Data Protection Regulation (for EU data subjects) 
+13.3 Audit Trail 
+13.3.1 Audit Logging Requirements 
+All system activities are logged for compliance and forensic analysis: 
+API Requests 
+All API calls with timestamp, customer, endpoint, response 
+Authentication Events 
+Login, logout, failed attempts, password changes 
+Data Access 
+All access to PII and sensitive data 
+Score Calculations 
+Record of all score generations with inputs 
+Model Changes 
+Training, deployment, rollback events 
+Configuration Changes 
+System setting modifications 
+13.3.2 Audit Log Retention 
+API Request Logs 
+10 years 
+Authentication Logs 
+7 years 
+Score Calculation Logs 
+10 years 
+Admin Action Logs 
+10 years 
+System Event Logs 
+3 years 
+13.4 Security Controls 
+13.4.1 Authentication and Authorization 
+API Keys 
+Unique per customer, rotatable, revocable 
+Multi-Factor Auth 
+Required for admin portal access 
+
+---PAGE BREAK---
+Password Policy 
+Minimum 12 characters, complexity requirements 
+Session Management 
+JWT with configurable expiry, secure httpOnly cookies 
+Account Lockout 
+Temporary lock after 5 failed login attempts 
+13.4.2 Network Security 
+Firewall 
+WAF with OWASP Top 10 protection 
+DDoS Protection 
+Rate limiting and traffic filtering 
+VPC Isolation 
+Private subnets for database and internal services 
+VPN Access 
+Required for administrative access 
+API Gateway 
+Centralized security policy enforcement 
+13.4.3 Vulnerability Management 
+31. Automated vulnerability scanning of dependencies 
+32. Static Application Security Testing (SAST) in CI/CD 
+33. Dynamic Application Security Testing (DAST) in staging 
+34. Penetration testing annually by third-party 
+35. Security patch management within 30 days of release 
+13.5 Incident Response 
+Security incident response procedures: 
+36. Detection: Automated monitoring and alerting for security events 
+37. Containment: Isolate affected systems to prevent spread 
+38. Eradication: Remove threat and restore secure state 
+39. Recovery: Restore normal operations with verification 
+40. Lessons Learned: Post-incident review and process improvement 
+41. Notification: Regulatory and customer notification as required 
+
+---PAGE BREAK---
+14. Deployment and Operations 
+This section covers deployment architecture, operational procedures, and monitoring for the 
+VyceScore platform. 
+14.1 Deployment Architecture 
+14.1.1 Environment Strategy 
+Development 
+Individual developer environments 
+Integration 
+Automated testing environment 
+Staging 
+Pre-production with production-like data 
+Production 
+Live environment serving customer traffic 
+Sandbox 
+Isolated environment for customer testing 
+14.1.2 Infrastructure as Code 
+All infrastructure is defined as code for reproducibility: 
+• 
+Terraform for cloud resource provisioning 
+• 
+Kubernetes manifests for container orchestration 
+• 
+Helm charts for application deployment 
+• 
+GitOps workflow with automated deployments 
+14.2 CI/CD Pipeline 
+14.2.1 Build Pipeline 
+1 
+Code Commit 
+Developer pushes to feature branch 
+2 
+Unit Tests 
+Automated unit test execution 
+3 
+Code Quality 
+SonarQube analysis for code smells 
+4 
+Security Scan 
+SAST and dependency vulnerability scan 
+5 
+Build Images 
+Docker image build and push to registry 
+6 
+Integration Tests 
+Run against integration environment 
+7 
+Merge 
+Merge to main branch after approval 
+14.2.2 Deployment Pipeline 
+1 
+Trigger 
+Merge to main triggers deployment 
+
+---PAGE BREAK---
+2 
+Staging Deploy 
+Automatic deployment to staging 
+3 
+Smoke Tests 
+Verify critical paths in staging 
+4 
+Approval 
+Manual approval for production 
+5 
+Production Deploy 
+Blue-green deployment to production 
+6 
+Health Checks 
+Verify deployment success 
+7 
+Rollback Ready 
+Previous version kept for quick rollback 
+14.3 Monitoring and Alerting 
+14.3.1 Metrics Collection 
+Application Metrics 
+Response times, error rates, throughput 
+Business Metrics 
+Query volumes, scores generated, revenue 
+Model Metrics 
+AUC-ROC, prediction distribution, drift 
+Infrastructure Metrics 
+CPU, memory, disk, network 
+14.3.2 Alerting Rules 
+Critical 
+API error rate > 1%, System down 
+High 
+P95 latency > threshold, Model AUC < 0.72 
+Medium 
+Disk usage > 80%, Memory usage > 85% 
+Low 
+Non-critical warnings, informational events 
+14.4 Backup and Recovery 
+14.4.1 Backup Strategy 
+Database 
+Continuous point-in-time recovery + daily snapshots 
+Model Artifacts 
+Versioned in object storage with cross-region replication 
+Configuration 
+Git repository with version history 
+Audit Logs 
+Immutable write-once storage 
+14.4.2 Recovery Objectives 
+RPO (Recovery Point 
+Objective) 
+< 1 hour for critical data 
+RTO (Recovery Time Objective) 
+< 4 hours for full system recovery 
+
+---PAGE BREAK---
+14.5 Operational Runbooks 
+Standard operating procedures for common scenarios: 
+• 
+Incident Response Runbook: Steps for handling production incidents 
+• 
+Deployment Runbook: Procedures for production deployments 
+• 
+Model Rollback Runbook: How to revert to previous model version 
+• 
+Data Recovery Runbook: Restoring from backup procedures 
+• 
+Security Incident Runbook: Responding to security events 
+14.6 Capacity Planning 
+Guidelines for scaling the system: 
+Horizontal Scaling 
+Add pod replicas based on CPU/memory thresholds 
+Database Scaling 
+Read replicas for query load, sharding for write load 
+Cache Scaling 
+Redis cluster for distributed caching 
+Storage Scaling 
+Auto-expanding object storage 
+ 
+VyceScore 
+Credit Scoring Engine 
+
+---PAGE BREAK---
+ 
+For questions or clarifications, contact: 
+product@vycescore.com 
+ 
+Document Version: 1.0 | March 2026 
+CONFIDENTIAL - For Internal Use Only 
+
+---PAGE BREAK---

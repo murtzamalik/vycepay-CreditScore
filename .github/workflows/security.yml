@@ -1,0 +1,222 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly scan every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Python dependency audit
+  # ──────────────────────────────────────────────
+  python-audit:
+    name: Python Dependency Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-audit-${{ runner.os }}-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            pip-audit-${{ runner.os }}-
+
+      - name: Install dependencies and pip-audit
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pip-audit
+
+      - name: Run pip-audit
+        run: pip-audit --strict --desc
+
+  # ──────────────────────────────────────────────
+  # Node dependency audit
+  # ──────────────────────────────────────────────
+  node-audit:
+    name: Node Dependency Scan
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+  # ──────────────────────────────────────────────
+  # Trivy container image scan
+  # ──────────────────────────────────────────────
+  trivy-scan:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t vycescore-backend:scan backend/
+
+      - name: Scan backend image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: vycescore-backend:scan
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+
+      - name: Build frontend image
+        run: docker build -t vycescore-frontend:scan frontend/
+
+      - name: Scan frontend image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: vycescore-frontend:scan
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+
+  # ──────────────────────────────────────────────
+  # Python SAST with Bandit (Phase 12.10)
+  # ──────────────────────────────────────────────
+  python-sast:
+    name: Python SAST (Bandit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit SAST scan
+        run: |
+          bandit -r backend/app/ \
+            --severity-level medium \
+            --confidence-level medium \
+            --format json \
+            --output bandit-report.json \
+            --exclude "backend/tests" \
+            || true
+
+      - name: Display Bandit results
+        run: |
+          bandit -r backend/app/ \
+            --severity-level medium \
+            --confidence-level medium \
+            --format screen \
+            --exclude "backend/tests"
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-sast-report
+          path: bandit-report.json
+          retention-days: 90
+
+  # ──────────────────────────────────────────────
+  # Dependency scanning with Trivy (filesystem)
+  # ──────────────────────────────────────────────
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan (Python)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "backend/"
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          vuln-type: "library"
+
+      - name: Run Trivy filesystem scan (Node)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "frontend/"
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          vuln-type: "library"
+
+  # ──────────────────────────────────────────────
+  # Secret scanning with TruffleHog
+  # ──────────────────────────────────────────────
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  # ──────────────────────────────────────────────
+  # Infrastructure as Code scanning
+  # ──────────────────────────────────────────────
+  iac-scan:
+    name: IaC Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan Terraform with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "config"
+          scan-ref: "infrastructure/"
+          format: table
+          exit-code: 0
+          severity: CRITICAL,HIGH

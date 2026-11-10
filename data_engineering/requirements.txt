@@ -1,0 +1,38 @@
+# VyceScore Data Engineering Dependencies
+# Python 3.11+
+
+# Orchestration
+apache-airflow==2.8.1
+apache-airflow-providers-apache-spark==4.7.1
+apache-airflow-providers-redis==3.6.0
+apache-airflow-providers-postgres==5.10.0
+
+# Distributed Compute
+pyspark==3.5.0
+
+# Feature Store
+feast[redis]==0.36.0
+
+# Data Quality
+great-expectations==0.18.8
+
+# Streaming
+confluent-kafka==2.3.0
+
+# Database & Cache
+psycopg2-binary==2.9.9
+redis==5.0.1
+sqlalchemy==2.0.25
+
+# ML Inference (scoring pipeline)
+xgboost==2.0.3
+shap==0.44.1
+numpy==1.26.3
+pandas==2.1.5
+
+# Monitoring & Observability
+prometheus-client==0.20.0
+structlog==24.1.0
+
+# Security
+cryptography==42.0.2

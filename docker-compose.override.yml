@@ -1,0 +1,94 @@
+# Development-specific overrides.
+# Docker Compose automatically merges this file with docker-compose.yml.
+
+services:
+  timescaledb:
+    ports:
+      - "5432:5432"
+    environment:
+      # Relaxed settings for local development
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    command: >
+      postgres
+        -c log_statement=all
+        -c log_min_duration_statement=200
+        -c shared_preload_libraries=timescaledb
+        -c max_connections=200
+
+  redis:
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+        --appendonly yes
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --loglevel verbose
+
+  kafka:
+    ports:
+      - "9092:9092"
+    environment:
+      # Shorter retention for dev to save disk space
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_BYTES: 536870912
+
+  # ──────────────────────────────────────────────
+  # Backend (FastAPI) — development mode
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: vycescore-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - ENV=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://vycescore:vycescore_dev@timescaledb:5432/vycescore
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - vycescore-network
+    # Uncomment when backend Dockerfile exists:
+    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    profiles:
+      - app
+
+  # ──────────────────────────────────────────────
+  # Frontend (React) — development mode
+  # ──────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: vycescore-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8000
+    networks:
+      - vycescore-network
+    # Uncomment when frontend Dockerfile exists:
+    # command: npm start
+    profiles:
+      - app

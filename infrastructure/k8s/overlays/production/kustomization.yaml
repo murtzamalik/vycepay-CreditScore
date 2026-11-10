@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vycescore
+
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/configmap.yaml
+
+commonLabels:
+  environment: production
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: vycescore-config
+    patch: |-
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: "WARNING"
+      - op: replace
+        path: /data/API_DOCS_ENABLED
+        value: "false"
+      - op: replace
+        path: /data/CORS_ALLOWED_ORIGINS
+        value: "https://admin.vycescore.com"
+      - op: replace
+        path: /data/DB_POOL_SIZE
+        value: "50"
+      - op: replace
+        path: /data/DB_MAX_OVERFLOW
+        value: "25"
+
+  - target:
+      kind: ResourceQuota
+      name: vycescore-quota
+    patch: |-
+      - op: replace
+        path: /spec/hard/requests.cpu
+        value: "32"
+      - op: replace
+        path: /spec/hard/requests.memory
+        value: "64Gi"
+      - op: replace
+        path: /spec/hard/limits.cpu
+        value: "64"
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: "128Gi"
+      - op: replace
+        path: /spec/hard/pods
+        value: "100"

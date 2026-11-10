@@ -1,0 +1,103 @@
+# VyceScore VPN-Only Access for Admin Portal (Phase 12.9)
+#
+# Kubernetes NetworkPolicy to restrict admin portal access to VPN CIDR only.
+# The admin portal (React frontend + admin API endpoints) must only be
+# accessible through the corporate VPN.
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-portal-vpn-only
+  namespace: vycescore
+  labels:
+    app: vycescore
+    component: security
+    policy: vpn-restriction
+  annotations:
+    description: >
+      Restricts access to admin portal pods to VPN CIDR ranges only.
+      All admin API endpoints (/v1/admin/*, /v1/auth/*) are served by
+      pods with label tier=admin, which this policy targets.
+spec:
+  podSelector:
+    matchLabels:
+      tier: admin
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow traffic from VPN CIDR only
+    - from:
+        - ipBlock:
+            cidr: 10.0.0.0/8      # Internal VPN CIDR (adjust per deployment)
+        - ipBlock:
+            cidr: 172.16.0.0/12   # Secondary VPN CIDR (if applicable)
+      ports:
+        - protocol: TCP
+          port: 8000              # FastAPI backend port
+        - protocol: TCP
+          port: 3000              # React frontend port
+
+    # Allow cluster-internal traffic (health checks, service mesh)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vycescore
+        - podSelector:
+            matchLabels:
+              app: vycescore
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 3000
+
+---
+# Deny all ingress to admin pods by default (defense in depth)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-portal-default-deny
+  namespace: vycescore
+  labels:
+    app: vycescore
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      tier: admin
+  policyTypes:
+    - Ingress
+
+---
+# Network policy for API endpoints (public-facing, less restrictive)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-gateway-ingress
+  namespace: vycescore
+  labels:
+    app: vycescore
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      tier: api
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow traffic from load balancer / ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow internal service-to-service
+    - from:
+        - podSelector:
+            matchLabels:
+              app: vycescore
+      ports:
+        - protocol: TCP
+          port: 8000

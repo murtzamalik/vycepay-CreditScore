@@ -1,0 +1,59 @@
+###############################################################################
+# PodDisruptionBudgets — ensure HA during voluntary disruptions
+###############################################################################
+
+{{- $backendApi := .Values.services.backendApi -}}
+{{- if $backendApi.enabled -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "vycescore.labels" . | nindent 4 }}
+    app.kubernetes.io/name: backend-api
+spec:
+  minAvailable: {{ $backendApi.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend-api
+      app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+---
+{{- $mlServing := .Values.services.mlServing -}}
+{{- if $mlServing.enabled -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ml-serving
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "vycescore.labels" . | nindent 4 }}
+    app.kubernetes.io/name: ml-serving
+spec:
+  minAvailable: {{ $mlServing.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-serving
+      app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+---
+{{- $frontend := .Values.services.frontend -}}
+{{- if $frontend.enabled -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "vycescore.labels" . | nindent 4 }}
+    app.kubernetes.io/name: frontend
+spec:
+  minAvailable: {{ $frontend.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+      app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

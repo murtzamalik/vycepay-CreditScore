@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vycescore-sandbox
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: vycescore
+    app.kubernetes.io/instance: sandbox
+    app.kubernetes.io/part-of: vycescore-platform
+    environment: sandbox
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: vycescore
+  source:
+    repoURL: https://github.com/vycepay/vycescore.git
+    targetRevision: main
+    path: infrastructure/helm/vycescore
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+      parameters:
+        - name: namespace
+          value: vycescore-sandbox
+        - name: environment
+          value: sandbox
+        - name: ingress.apiHost
+          value: sandbox-api.vycescore.com
+        - name: ingress.adminHost
+          value: sandbox-admin.vycescore.com
+        - name: services.backendApi.replicas
+          value: "1"
+        - name: services.frontend.replicas
+          value: "1"
+        - name: services.mlServing.replicas
+          value: "1"
+        - name: services.worker.replicas
+          value: "1"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vycescore-sandbox
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

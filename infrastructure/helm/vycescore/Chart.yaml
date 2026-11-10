@@ -1,0 +1,15 @@
+apiVersion: v2
+name: vycescore
+description: VyceScore Credit Scoring Platform — multi-service Helm chart
+type: application
+version: 0.2.0
+appVersion: "1.0.0"
+keywords:
+  - vycescore
+  - credit-scoring
+  - fintech
+  - microservices
+maintainers:
+  - name: VyceScore Platform Team
+    email: platform@vycescore.com
+dependencies: []

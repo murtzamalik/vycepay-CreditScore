@@ -1,0 +1,390 @@
+###############################################################################
+# VyceScore — Prometheus Alerting Rules
+# RED metrics: Rate, Errors, Duration
+# SLOs: 99.9% availability, Lite <500ms p95, Pro <2s p95
+###############################################################################
+
+groups:
+  # -------------------------------------------------------------------------
+  # API Availability & Error Rate
+  # -------------------------------------------------------------------------
+  - name: vycescore.api.availability
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{namespace="vycescore", code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{namespace="vycescore"}[5m]))
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "VyceScore API error rate above 1%"
+          description: >
+            Error rate is {{ printf "%.2f" $value | float64 | mul 100 }}%
+            (threshold: 1%). This breaches the 99.9% availability SLO.
+          runbook_url: "https://wiki.vycescore.com/runbooks/high-error-rate"
+
+      - alert: HighErrorRateWarning
+        expr: |
+          (
+            sum(rate(http_requests_total{namespace="vycescore", code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{namespace="vycescore"}[5m]))
+          ) > 0.005
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "VyceScore API error rate above 0.5%"
+          description: >
+            Error rate is {{ printf "%.2f" $value | float64 | mul 100 }}%.
+            Approaching SLO breach threshold.
+
+      - alert: NoTraffic
+        expr: |
+          sum(rate(http_requests_total{namespace="vycescore"}[5m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "No traffic to VyceScore API"
+          description: "No HTTP requests detected for 10 minutes. Check ingress and upstream connectivity."
+
+  # -------------------------------------------------------------------------
+  # Latency SLOs
+  # -------------------------------------------------------------------------
+  - name: vycescore.api.latency
+    rules:
+      - alert: LiteAPILatencySLOBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{
+              namespace="vycescore",
+              handler=~"/v1/scores/lite/.*"
+            }[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          api_tier: lite
+        annotations:
+          summary: "VyceScore Lite API p95 latency exceeds 500ms SLO"
+          description: >
+            Lite API p95 latency is {{ printf "%.0f" $value | float64 | mul 1000 }}ms
+            (SLO: 500ms).
+          runbook_url: "https://wiki.vycescore.com/runbooks/latency-slo-breach"
+
+      - alert: ProAPILatencySLOBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{
+              namespace="vycescore",
+              handler=~"/v1/scores/pro/.*"
+            }[5m])) by (le)
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          api_tier: pro
+        annotations:
+          summary: "VyceScore Pro API p95 latency exceeds 2s SLO"
+          description: >
+            Pro API p95 latency is {{ printf "%.1f" $value }}s
+            (SLO: 2s). SHAP computation may be the bottleneck.
+          runbook_url: "https://wiki.vycescore.com/runbooks/latency-slo-breach"
+
+      - alert: HighMedianLatency
+        expr: |
+          histogram_quantile(0.50,
+            sum(rate(http_request_duration_seconds_bucket{namespace="vycescore"}[5m])) by (le)
+          ) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "VyceScore API median latency above 1s"
+          description: "Median latency is {{ printf \"%.1f\" $value }}s. Investigate database or cache performance."
+
+  # -------------------------------------------------------------------------
+  # Pod Health
+  # -------------------------------------------------------------------------
+  - name: vycescore.pod.health
+    rules:
+      - alert: PodCrashLooping
+        expr: |
+          increase(kube_pod_container_status_restarts_total{
+            namespace="vycescore"
+          }[15m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash-looping"
+          description: >
+            Pod {{ $labels.pod }} in namespace {{ $labels.namespace }}
+            has restarted {{ printf "%.0f" $value }} times in the last 15 minutes.
+          runbook_url: "https://wiki.vycescore.com/runbooks/pod-crash-loop"
+
+      - alert: PodNotReady
+        expr: |
+          kube_pod_status_ready{
+            namespace="vycescore",
+            condition="true"
+          } == 0
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} not ready for 10 minutes"
+          description: "Pod {{ $labels.pod }} has been in a non-ready state for over 10 minutes."
+
+      - alert: HighPodMemoryUsage
+        expr: |
+          (
+            container_memory_working_set_bytes{namespace="vycescore"}
+            /
+            container_spec_memory_limit_bytes{namespace="vycescore"}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} memory usage above 85%"
+          description: "Memory usage is {{ printf \"%.0f\" $value | float64 | mul 100 }}%. Risk of OOM kill."
+
+      - alert: HighPodCPUUsage
+        expr: |
+          (
+            rate(container_cpu_usage_seconds_total{namespace="vycescore"}[5m])
+            /
+            container_spec_cpu_quota{namespace="vycescore"}
+            * container_spec_cpu_period{namespace="vycescore"}
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} CPU usage above 85%"
+          description: "CPU usage is high. Consider scaling horizontally."
+
+  # -------------------------------------------------------------------------
+  # Infrastructure: Database & Cache
+  # -------------------------------------------------------------------------
+  - name: vycescore.infrastructure
+    rules:
+      - alert: RDSHighCPU
+        expr: |
+          aws_rds_cpuutilization_average{dbinstance_identifier=~".*vycescore.*"} > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "RDS CPU utilization above 80%"
+          description: "Database {{ $labels.dbinstance_identifier }} CPU at {{ printf \"%.0f\" $value }}%."
+
+      - alert: RDSLowFreeStorage
+        expr: |
+          aws_rds_free_storage_space_average{dbinstance_identifier=~".*vycescore.*"} < 5368709120
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "RDS free storage below 5GB"
+          description: "Database {{ $labels.dbinstance_identifier }} has {{ printf \"%.1f\" $value | float64 | div 1073741824 }}GB free."
+
+      - alert: RedisHighMemoryUsage
+        expr: |
+          redis_memory_used_bytes{namespace="vycescore"}
+          /
+          redis_memory_max_bytes{namespace="vycescore"} > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Redis memory usage above 80%"
+          description: "Redis cache memory at {{ printf \"%.0f\" $value | float64 | mul 100 }}%. LRU eviction will increase."
+
+      - alert: RedisCacheMissRateHigh
+        expr: |
+          (
+            rate(redis_keyspace_misses_total{namespace="vycescore"}[5m])
+            /
+            (rate(redis_keyspace_hits_total{namespace="vycescore"}[5m]) + rate(redis_keyspace_misses_total{namespace="vycescore"}[5m]))
+          ) > 0.30
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Redis cache miss rate above 30%"
+          description: "Cache miss rate is {{ printf \"%.0f\" $value | float64 | mul 100 }}%. Score caching may not be effective."
+
+      - alert: DiskUsageHigh
+        expr: |
+          (
+            1 - node_filesystem_avail_bytes{mountpoint="/", namespace="vycescore"}
+            /
+            node_filesystem_size_bytes{mountpoint="/", namespace="vycescore"}
+          ) > 0.80
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Disk usage above 80%"
+          description: "Node {{ $labels.instance }} disk usage is {{ printf \"%.0f\" $value | float64 | mul 100 }}%."
+
+  # -------------------------------------------------------------------------
+  # Scoring Pipeline
+  # -------------------------------------------------------------------------
+  - name: vycescore.scoring
+    rules:
+      - alert: BatchPipelineFailure
+        expr: |
+          vycescore_batch_pipeline_last_success_timestamp < (time() - 90000)
+        for: 5m
+        labels:
+          severity: critical
+          team: data
+        annotations:
+          summary: "Daily batch scoring pipeline has not completed"
+          description: "The batch pipeline (scheduled for 02:00 UTC) has not succeeded in over 25 hours."
+
+      - alert: ModelInferenceErrors
+        expr: |
+          rate(vycescore_model_inference_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: ml
+        annotations:
+          summary: "High model inference error rate"
+          description: "Model inference is failing at {{ printf \"%.1f\" $value }} errors/sec. Check model server health."
+
+      - alert: SHAPComputationSlow
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(vycescore_shap_computation_duration_seconds_bucket[5m])) by (le)
+          ) > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "SHAP computation p95 exceeds 1.5s"
+          description: "SHAP explanation generation is slow ({{ printf \"%.1f\" $value }}s p95). This impacts Pro API SLO."
+
+  # -------------------------------------------------------------------------
+  # Model Quality (High severity)
+  # -------------------------------------------------------------------------
+  - name: vycescore.model.quality
+    rules:
+      - alert: ModelAUCBelowThreshold
+        expr: |
+          vycescore_model_auc_roc < 0.72
+        for: 0m
+        labels:
+          severity: high
+          team: ml
+        annotations:
+          summary: "Model AUC-ROC below 0.72 threshold"
+          description: >
+            Current model AUC-ROC is {{ printf "%.4f" $value }}
+            (threshold: 0.72, target: 0.75). Model retraining may be required.
+          runbook_url: "https://wiki.vycescore.com/runbooks/model-degradation"
+
+      - alert: ModelAUCWarning
+        expr: |
+          vycescore_model_auc_roc < 0.75
+        for: 0m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "Model AUC-ROC below 0.75 target"
+          description: >
+            Current model AUC-ROC is {{ printf "%.4f" $value }}.
+            Below target but above minimum threshold.
+
+  # -------------------------------------------------------------------------
+  # System Down (Critical)
+  # -------------------------------------------------------------------------
+  - name: vycescore.system.down
+    rules:
+      - alert: VyceScoreDown
+        expr: |
+          up{job="vycescore-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "VyceScore API is down"
+          description: "The VyceScore API target {{ $labels.instance }} has been unreachable for 2 minutes."
+          runbook_url: "https://wiki.vycescore.com/runbooks/system-down"
+
+      - alert: AllReplicasDown
+        expr: |
+          count(up{job="vycescore-api"} == 1) == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "All VyceScore API replicas are down"
+          description: "No healthy VyceScore API instances detected. Complete service outage."
+          runbook_url: "https://wiki.vycescore.com/runbooks/system-down"
+
+  # -------------------------------------------------------------------------
+  # Low severity — informational / non-critical
+  # -------------------------------------------------------------------------
+  - name: vycescore.low.priority
+    rules:
+      - alert: KPICalculationSkipped
+        expr: |
+          time() - vycescore_kpi_last_calculation_timestamp{job_type="hourly"} > 7200
+        for: 5m
+        labels:
+          severity: low
+          team: platform
+        annotations:
+          summary: "Hourly KPI calculation appears stalled"
+          description: "No hourly KPI calculation has run in over 2 hours. The scheduler may need attention."
+
+      - alert: LowTrafficVolume
+        expr: |
+          sum(rate(vycescore_http_requests_total{namespace="vycescore"}[1h])) < 0.01
+        for: 30m
+        labels:
+          severity: low
+          team: platform
+        annotations:
+          summary: "Very low API traffic volume"
+          description: "API request rate is near zero. This may be expected during off-hours."
+
+      - alert: CertificateExpiringSoon
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 604800
+        for: 1h
+        labels:
+          severity: low
+          team: platform
+        annotations:
+          summary: "TLS certificate expires within 7 days"
+          description: "Certificate for {{ $labels.instance }} expires in {{ printf \"%.0f\" $value | float64 | div 86400 }} days."

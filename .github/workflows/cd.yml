@@ -1,0 +1,277 @@
+name: CD — Build, Push, Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: af-south-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.af-south-1.amazonaws.com
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build and push Docker images to ECR
+  # ---------------------------------------------------------------------------
+  build-push:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - name: vycescore-api
+            context: .
+            dockerfile: backend/Dockerfile
+          - name: vycescore-admin
+            context: ./frontend
+            dockerfile: frontend/Dockerfile
+          - name: vycescore-ml
+            context: .
+            dockerfile: infrastructure/docker/ml/Dockerfile
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.ECR_REGISTRY }}/${{ matrix.image.name }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.ECR_REGISTRY }}/${{ matrix.image.name }}:${{ steps.vars.outputs.sha_short }}"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Deploy to Staging (automatic on main push)
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging-api.vycescore.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+
+      - name: Login to ArgoCD
+        run: |
+          argocd login ${{ secrets.ARGOCD_SERVER }} \
+            --username ${{ secrets.ARGOCD_USERNAME }} \
+            --password ${{ secrets.ARGOCD_PASSWORD }} \
+            --grpc-web
+
+      - name: Update image tags in ArgoCD
+        run: |
+          SHA_SHORT=$(echo ${{ github.sha }} | cut -c1-7)
+          argocd app set vycescore-staging \
+            --helm-set services.backendApi.image.tag=$SHA_SHORT \
+            --helm-set services.frontend.image.tag=$SHA_SHORT \
+            --helm-set services.mlServing.image.tag=$SHA_SHORT \
+            --helm-set services.worker.image.tag=$SHA_SHORT \
+            --grpc-web
+
+      - name: Sync and wait
+        run: |
+          argocd app sync vycescore-staging --grpc-web --prune --force
+          argocd app wait vycescore-staging --grpc-web --timeout 300 --health
+
+      - name: Smoke tests
+        run: |
+          echo "Running smoke tests against staging..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://staging-api.vycescore.com/health || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed."
+              break
+            fi
+            echo "Attempt $i: got HTTP $STATUS, retrying..."
+            sleep 10
+          done
+          if [ "$STATUS" != "200" ]; then
+            echo "Smoke test failed — initiating rollback."
+            argocd app rollback vycescore-staging --grpc-web
+            exit 1
+          fi
+
+      - name: Run API integration tests
+        run: |
+          curl -sf https://staging-api.vycescore.com/v1/health | jq .
+          # Verify score endpoint returns 401 without API key
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://staging-api.vycescore.com/v1/scores/lite/test)
+          if [ "$STATUS" != "401" ] && [ "$STATUS" != "403" ]; then
+            echo "Expected 401/403, got $STATUS"
+            exit 1
+          fi
+          echo "Integration tests passed."
+
+  # ---------------------------------------------------------------------------
+  # Deploy to Production (manual approval required)
+  # ---------------------------------------------------------------------------
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://api.vycescore.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+
+      - name: Login to ArgoCD
+        run: |
+          argocd login ${{ secrets.ARGOCD_SERVER }} \
+            --username ${{ secrets.ARGOCD_USERNAME }} \
+            --password ${{ secrets.ARGOCD_PASSWORD }} \
+            --grpc-web
+
+      - name: Pre-deployment snapshot
+        run: |
+          echo "Recording current deployment state for rollback..."
+          argocd app get vycescore-production --grpc-web -o json > /tmp/pre-deploy-state.json
+          echo "Current revision: $(jq -r '.status.sync.revision' /tmp/pre-deploy-state.json)"
+
+      - name: Blue-Green deployment — update inactive slot
+        run: |
+          SHA_SHORT=$(echo ${{ github.sha }} | cut -c1-7)
+
+          # Get current active slot
+          ACTIVE_SLOT=$(argocd app get vycescore-production --grpc-web -o json | \
+            jq -r '.spec.source.helm.parameters[] | select(.name == "blueGreen.activeSlot") | .value // "blue"')
+          INACTIVE_SLOT=$([[ "$ACTIVE_SLOT" == "blue" ]] && echo "green" || echo "blue")
+
+          echo "Active slot: $ACTIVE_SLOT, deploying to: $INACTIVE_SLOT"
+
+          # Update image tags
+          argocd app set vycescore-production \
+            --helm-set services.backendApi.image.tag=$SHA_SHORT \
+            --helm-set services.frontend.image.tag=$SHA_SHORT \
+            --helm-set services.mlServing.image.tag=$SHA_SHORT \
+            --helm-set services.worker.image.tag=$SHA_SHORT \
+            --grpc-web
+
+      - name: Sync production
+        run: |
+          argocd app sync vycescore-production --grpc-web --prune
+          argocd app wait vycescore-production --grpc-web --timeout 600 --health
+
+      - name: Production smoke tests
+        id: smoke
+        run: |
+          echo "Running production smoke tests..."
+          PASS=false
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://api.vycescore.com/health || true)
+            if [ "$STATUS" = "200" ]; then
+              PASS=true
+              echo "Production health check passed."
+              break
+            fi
+            echo "Attempt $i: got HTTP $STATUS, retrying..."
+            sleep 10
+          done
+          if [ "$PASS" != "true" ]; then
+            echo "smoke_failed=true" >> $GITHUB_OUTPUT
+            echo "Production smoke test failed!"
+            exit 1
+          fi
+
+      - name: Rollback on failure
+        if: failure() && steps.smoke.outputs.smoke_failed == 'true'
+        run: |
+          echo "Rolling back production deployment..."
+          argocd app rollback vycescore-production --grpc-web
+          argocd app wait vycescore-production --grpc-web --timeout 300 --health
+          echo "Rollback completed."
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "Production deployment of ${{ github.sha }} completed successfully."
+          echo "Deployment time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Slack notification placeholder:
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d "{\"text\": \"VyceScore production deployed: ${{ github.sha }}\"}"

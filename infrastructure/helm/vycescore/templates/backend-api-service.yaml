@@ -1,0 +1,29 @@
+{{- $svc := .Values.services.backendApi -}}
+{{- if $svc.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "vycescore.labels" . | nindent 4 }}
+    app.kubernetes.io/name: backend-api
+    app.kubernetes.io/component: api
+spec:
+  type: {{ $svc.service.type | default "ClusterIP" }}
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: backend-api
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- if .Values.blueGreen.enabled }}
+    slot: {{ .Values.blueGreen.activeSlot }}
+    {{- end }}
+{{- end }}

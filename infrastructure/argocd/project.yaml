@@ -1,0 +1,71 @@
+###############################################################################
+# VyceScore — ArgoCD Project
+# Defines which repos, clusters, and namespaces VyceScore apps can use
+###############################################################################
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: vycescore
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: vycescore-platform
+spec:
+  description: "VyceScore Credit Scoring Platform"
+
+  # Source repos
+  sourceRepos:
+    - https://github.com/vycepay/vycescore.git
+
+  # Destination clusters and namespaces
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: vycescore
+    - server: https://kubernetes.default.svc
+      namespace: vycescore-sandbox
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+
+  # Allowed cluster-scoped resources
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+
+  # Namespace-scoped resources (allow all within allowed namespaces)
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: autoscaling
+      kind: "*"
+    - group: batch
+      kind: "*"
+    - group: networking.k8s.io
+      kind: "*"
+    - group: policy
+      kind: "*"
+
+  # Sync windows: production only during business hours (EAT UTC+3)
+  syncWindows:
+    - kind: allow
+      schedule: "0 6 * * 1-5"  # Mon-Fri 06:00 UTC (09:00 EAT)
+      duration: 10h
+      applications:
+        - vycescore-production
+      timeZone: UTC
+
+  roles:
+    - name: admin
+      description: "VyceScore platform admin"
+      policies:
+        - p, proj:vycescore:admin, applications, *, vycescore/*, allow
+      groups:
+        - vycescore-admins
+
+    - name: deployer
+      description: "CI/CD deployment role"
+      policies:
+        - p, proj:vycescore:deployer, applications, sync, vycescore/*, allow
+        - p, proj:vycescore:deployer, applications, get, vycescore/*, allow

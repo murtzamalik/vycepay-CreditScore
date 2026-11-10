@@ -1,0 +1,14 @@
+apiVersion: v2
+name: vycescore-api
+description: VyceScore Credit Scoring API — Helm chart for Kubernetes deployment
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - vycescore
+  - credit-scoring
+  - fintech
+  - api
+maintainers:
+  - name: VyceScore Platform Team
+    email: platform@vycescore.com

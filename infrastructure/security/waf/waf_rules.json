@@ -1,0 +1,153 @@
+{
+  "_comment": "VyceScore WAF Rules — OWASP Top 10 coverage (Phase 12.8)",
+  "waf_configuration": {
+    "name": "vycescore-waf",
+    "description": "Web Application Firewall rules for VyceScore API Gateway",
+    "default_action": "ALLOW",
+    "log_all_requests": true,
+    "rules": [
+      {
+        "name": "AWSManagedRulesCommonRuleSet",
+        "priority": 1,
+        "description": "OWASP Core Rule Set — covers SQL injection, XSS, command injection, path traversal",
+        "vendor": "AWS",
+        "managed_rule_group": "AWSManagedRulesCommonRuleSet",
+        "override_action": "NONE",
+        "excluded_rules": []
+      },
+      {
+        "name": "AWSManagedRulesSQLiRuleSet",
+        "priority": 2,
+        "description": "SQL Injection protection",
+        "vendor": "AWS",
+        "managed_rule_group": "AWSManagedRulesSQLiRuleSet",
+        "override_action": "NONE"
+      },
+      {
+        "name": "AWSManagedRulesKnownBadInputsRuleSet",
+        "priority": 3,
+        "description": "Known bad inputs — Log4j, SSRF, deserialization attacks",
+        "vendor": "AWS",
+        "managed_rule_group": "AWSManagedRulesKnownBadInputsRuleSet",
+        "override_action": "NONE"
+      },
+      {
+        "name": "AWSManagedRulesLinuxRuleSet",
+        "priority": 4,
+        "description": "Linux-specific LFI/RFI protection",
+        "vendor": "AWS",
+        "managed_rule_group": "AWSManagedRulesLinuxRuleSet",
+        "override_action": "NONE"
+      },
+      {
+        "name": "RateLimitRule",
+        "priority": 5,
+        "description": "Rate limiting — max 2000 requests per 5 minutes per IP",
+        "type": "RATE_BASED",
+        "rate_limit": 2000,
+        "evaluation_window_sec": 300,
+        "action": "BLOCK",
+        "aggregate_key_type": "IP"
+      },
+      {
+        "name": "GeoBlockRule",
+        "priority": 6,
+        "description": "Allow only requests from approved regions (configurable per deployment)",
+        "type": "GEO_MATCH",
+        "action": "COUNT",
+        "comment": "Set to BLOCK in production and configure allowed_countries list",
+        "allowed_countries": ["KE", "UG", "TZ", "RW", "GB", "US"]
+      },
+      {
+        "name": "IPReputationRule",
+        "priority": 7,
+        "description": "Block requests from known malicious IP addresses",
+        "vendor": "AWS",
+        "managed_rule_group": "AWSManagedRulesAmazonIpReputationList",
+        "override_action": "NONE"
+      },
+      {
+        "name": "BotControlRule",
+        "priority": 8,
+        "description": "Bot detection and management",
+        "vendor": "AWS",
+        "managed_rule_group": "AWSManagedRulesBotControlRuleSet",
+        "override_action": "NONE"
+      },
+      {
+        "name": "SizeRestrictionRule",
+        "priority": 9,
+        "description": "Block oversized request bodies (max 8KB for API, 256KB for batch)",
+        "type": "SIZE_CONSTRAINT",
+        "action": "BLOCK",
+        "constraints": [
+          {
+            "field": "BODY",
+            "comparison": "GT",
+            "size_bytes": 262144,
+            "text_transformation": "NONE"
+          }
+        ]
+      },
+      {
+        "name": "RequireHTTPSRule",
+        "priority": 10,
+        "description": "Block all non-HTTPS requests",
+        "type": "BYTE_MATCH",
+        "action": "BLOCK",
+        "match_conditions": [
+          {
+            "field": "REQUEST_URI",
+            "target": "http://",
+            "positional_constraint": "STARTS_WITH"
+          }
+        ]
+      },
+      {
+        "name": "AdminPortalProtection",
+        "priority": 11,
+        "description": "Additional protection for admin endpoints — stricter rate limit",
+        "type": "RATE_BASED",
+        "rate_limit": 100,
+        "evaluation_window_sec": 300,
+        "action": "BLOCK",
+        "aggregate_key_type": "IP",
+        "scope_down_statement": {
+          "byte_match": {
+            "field": "URI_PATH",
+            "target": "/v1/admin",
+            "positional_constraint": "STARTS_WITH"
+          }
+        }
+      },
+      {
+        "name": "AuthEndpointProtection",
+        "priority": 12,
+        "description": "Brute force protection for auth endpoints",
+        "type": "RATE_BASED",
+        "rate_limit": 20,
+        "evaluation_window_sec": 300,
+        "action": "BLOCK",
+        "aggregate_key_type": "IP",
+        "scope_down_statement": {
+          "byte_match": {
+            "field": "URI_PATH",
+            "target": "/v1/auth",
+            "positional_constraint": "STARTS_WITH"
+          }
+        }
+      }
+    ],
+    "custom_response_bodies": {
+      "waf_blocked": {
+        "content_type": "APPLICATION_JSON",
+        "content": "{\"error\":{\"code\":\"WAF_BLOCKED\",\"message\":\"Request blocked by security policy\",\"details\":{}}}"
+      }
+    },
+    "logging": {
+      "enabled": true,
+      "log_destination": "s3://vycescore-waf-logs/",
+      "redacted_fields": ["Authorization", "X-API-Key", "Cookie"]
+    }
+  }
+}

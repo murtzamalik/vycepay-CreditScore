@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vycescore
+
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/configmap.yaml
+
+commonLabels:
+  environment: dev
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: vycescore-config
+    patch: |-
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: "DEBUG"
+      - op: replace
+        path: /data/API_DOCS_ENABLED
+        value: "true"
+      - op: replace
+        path: /data/CORS_ALLOWED_ORIGINS
+        value: "http://localhost:3000,https://dev-admin.vycescore.com"
+      - op: replace
+        path: /data/RATE_LIMIT_LITE_RPM
+        value: "1000"
+      - op: replace
+        path: /data/RATE_LIMIT_PRO_RPM
+        value: "500"
+
+  - target:
+      kind: ResourceQuota
+      name: vycescore-quota
+    patch: |-
+      - op: replace
+        path: /spec/hard/requests.cpu
+        value: "8"
+      - op: replace
+        path: /spec/hard/requests.memory
+        value: "16Gi"
+      - op: replace
+        path: /spec/hard/limits.cpu
+        value: "16"
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: "32Gi"
+      - op: replace
+        path: /spec/hard/pods
+        value: "30"

@@ -1,0 +1,22 @@
+{{- $svc := .Values.services.frontend -}}
+{{- if $svc.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "vycescore.labels" . | nindent 4 }}
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: ui
+spec:
+  type: {{ $svc.service.type | default "ClusterIP" }}
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

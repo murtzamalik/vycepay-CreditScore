@@ -1,0 +1,115 @@
+# VyceScore — Staging Environment Values
+
+namespace: vycescore
+environment: staging
+
+config:
+  LOG_LEVEL: "INFO"
+  API_DOCS_ENABLED: "true"
+  CORS_ALLOWED_ORIGINS: "https://staging-admin.vycescore.com"
+  DB_POOL_SIZE: "20"
+  DB_MAX_OVERFLOW: "10"
+
+blueGreen:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  apiHost: staging-api.vycescore.com
+  adminHost: staging-admin.vycescore.com
+  annotations:
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    - secretName: staging-vycescore-api-tls
+      hosts:
+        - staging-api.vycescore.com
+    - secretName: staging-vycescore-admin-tls
+      hosts:
+        - staging-admin.vycescore.com
+
+services:
+  backendApi:
+    enabled: true
+    replicas: 2
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-api"
+      tag: latest
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPU: 70
+      targetMemory: 80
+    pdb:
+      minAvailable: 1
+    serviceAccount:
+      create: true
+      name: scoring-service
+      annotations:
+        eks.amazonaws.com/role-arn: ""
+
+  frontend:
+    enabled: true
+    replicas: 2
+    apiUrl: "https://staging-api.vycescore.com"
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-admin"
+      tag: latest
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  mlServing:
+    enabled: true
+    replicas: 2
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-ml"
+      tag: latest
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 4
+      targetCPU: 60
+      targetMemory: 75
+    nodeSelector:
+      workload: ml-inference
+    tolerations:
+      - key: workload
+        value: ml-inference
+        effect: NoSchedule
+
+  worker:
+    enabled: true
+    replicas: 1
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-api"
+      tag: latest
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi

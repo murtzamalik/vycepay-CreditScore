@@ -1,0 +1,108 @@
+# VyceScore — Dev Environment Values
+
+namespace: vycescore
+environment: dev
+
+config:
+  LOG_LEVEL: "DEBUG"
+  API_DOCS_ENABLED: "true"
+  CORS_ALLOWED_ORIGINS: "http://localhost:3000,https://dev-admin.vycescore.com"
+  RATE_LIMIT_LITE_RPM: "1000"
+  RATE_LIMIT_PRO_RPM: "500"
+  BATCH_SCHEDULE_CRON: "0 3 * * *"
+  DB_POOL_SIZE: "10"
+  DB_MAX_OVERFLOW: "5"
+
+blueGreen:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  apiHost: dev-api.vycescore.com
+  adminHost: dev-admin.vycescore.com
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+  tls:
+    - secretName: dev-vycescore-api-tls
+      hosts:
+        - dev-api.vycescore.com
+    - secretName: dev-vycescore-admin-tls
+      hosts:
+        - dev-admin.vycescore.com
+
+services:
+  backendApi:
+    enabled: true
+    replicas: 1
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-api"
+      tag: latest
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+    pdb:
+      minAvailable: 0
+    serviceAccount:
+      create: true
+      name: scoring-service
+      annotations:
+        eks.amazonaws.com/role-arn: ""
+
+  frontend:
+    enabled: true
+    replicas: 1
+    apiUrl: "https://dev-api.vycescore.com"
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-admin"
+      tag: latest
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+    pdb:
+      minAvailable: 0
+
+  mlServing:
+    enabled: true
+    replicas: 1
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-ml"
+      tag: latest
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      minAvailable: 0
+    nodeSelector: {}
+    tolerations: []
+
+  worker:
+    enabled: true
+    replicas: 1
+    image:
+      repository: "${AWS_ACCOUNT_ID}.dkr.ecr.af-south-1.amazonaws.com/vycescore-api"
+      tag: latest
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

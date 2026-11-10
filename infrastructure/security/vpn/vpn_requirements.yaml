@@ -1,0 +1,60 @@
+# VyceScore VPN Requirements (Phase 12.9)
+#
+# The admin portal MUST be accessible only via corporate VPN.
+# This document outlines the VPN architecture and access policies.
+
+vpn_requirements:
+  description: >
+    VPN-only access for VyceScore Admin Portal.
+    All admin operations (user management, system configuration,
+    audit log review, model management) require VPN connectivity.
+
+  vpn_solution:
+    primary: "WireGuard"
+    alternatives:
+      - "AWS Client VPN"
+      - "OpenVPN"
+      - "Tailscale"
+
+  access_policies:
+    admin_portal:
+      access: "VPN_ONLY"
+      description: "Admin UI and admin API endpoints require VPN"
+      endpoints:
+        - "/v1/admin/*"
+        - "/v1/auth/*"
+        - "/v1/auth/mfa/*"
+        - "Admin React frontend (port 3000)"
+
+    scoring_api:
+      access: "PUBLIC"
+      description: "Scoring API accessible via API key over HTTPS"
+      endpoints:
+        - "/v1/scores/*"
+        - "/v1/data-rights/*"
+
+    monitoring:
+      access: "VPN_ONLY"
+      description: "Prometheus, Grafana, Kibana dashboards"
+      endpoints:
+        - "Grafana (port 3001)"
+        - "Prometheus (port 9090)"
+        - "Kibana (port 5601)"
+
+  network_architecture:
+    vpn_cidr: "10.0.0.0/8"
+    dns_resolution: "Private DNS zone for internal services"
+    split_tunneling: false
+    mtu: 1420
+
+  authentication:
+    method: "Certificate + TOTP MFA"
+    certificate_authority: "Internal CA (HashiCorp Vault PKI)"
+    session_timeout_hours: 8
+    idle_timeout_minutes: 30
+
+  compliance:
+    - "All VPN connections are logged"
+    - "Certificate revocation via CRL/OCSP"
+    - "Quarterly access review for VPN credentials"
+    - "VPN logs retained for 7 years (authentication logs)"

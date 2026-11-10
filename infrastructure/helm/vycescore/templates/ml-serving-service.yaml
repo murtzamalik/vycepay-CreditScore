@@ -1,0 +1,26 @@
+{{- $svc := .Values.services.mlServing -}}
+{{- if $svc.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-serving
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "vycescore.labels" . | nindent 4 }}
+    app.kubernetes.io/name: ml-serving
+    app.kubernetes.io/component: ml
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: ml-serving
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
