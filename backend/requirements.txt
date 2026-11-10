@@ -17,3 +17,6 @@ bcrypt==4.2.1
 email-validator==2.1.1
 cryptography==44.0.0
 pyotp==2.9.0
+python-multipart==0.0.20
+prometheus-client==0.21.1
+apscheduler==3.10.4
